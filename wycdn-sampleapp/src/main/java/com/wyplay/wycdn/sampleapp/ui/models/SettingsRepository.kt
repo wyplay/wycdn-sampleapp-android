@@ -72,11 +72,11 @@ enum class WycdnEnv(val label: String,
                     val stunHostname: String,
                     val influxdbHostname: String,
                     val graylogHostname: String) {
-    PUBLIC("Public (poc2)",
-        "node0.poc2.wycdn.wyplay.com",
-        "stun.poc2.wycdn.wyplay.com",
-        "telegraf.poc2.wycdn.wyplay.com",
-        "graylog.poc2.wycdn.wyplay.com");
+    PUBLIC("Public (qa0)",
+        "node0.qa0.wycdn.wyplay.com",
+        "stun.qa0.wycdn.wyplay.com",
+        "telegraf.qa0.wycdn.wyplay.com",
+        "graylog.qa0.wycdn.wyplay.com");
 
     companion object {
         /**

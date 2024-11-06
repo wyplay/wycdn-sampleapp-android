@@ -88,6 +88,8 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
             // Collect settings values
             val wycdnEnv = app.settingsRepository.wycdnEnvironment.value
             val wycdnDownloadMetricsEnabled = app.settingsRepository.wycdnDownloadMetricsEnabled.value
+            val wycdnLoglevel = app.settingsRepository.wycdnLogLevel.value
+            val wycdnMode = app.settingsRepository.wycdnMode.value
 
             // Stop the service
             wycdn.unbindService()
@@ -111,6 +113,11 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
                 "wycdn.influxdb.send_download_metrics",
                 if (wycdnDownloadMetricsEnabled) "1" else "0"
             )
+
+            // set log_level and mode properties
+            wycdn.setConfigProperty("wycdn.agent.log_level", wycdnLoglevel)
+            wycdn.setConfigProperty("wycdn.agent.mode", wycdnMode)
+
 
             // Allow calling REST routes for debugging
             wycdn.setConfigProperty("wycdn.proxy.server_address", "0.0.0.0")
@@ -155,6 +162,7 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
             }.collect()
         }
     }
+
 
     companion object {
         /**

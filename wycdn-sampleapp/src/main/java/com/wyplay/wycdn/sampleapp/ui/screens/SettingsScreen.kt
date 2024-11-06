@@ -175,7 +175,7 @@ fun SettingsScreen(
                     }
                 }
             )
-
+            /*
             if (debugMenuEnabled) {
                 // Send Download metric enabled switch
                 Row(
@@ -210,7 +210,7 @@ fun SettingsScreen(
                         }
                     )
                 }
-            }
+            }*/
 
             Spacer(modifier = Modifier.weight(1f)) // This pushes the button to the bottom
 

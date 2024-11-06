@@ -11,6 +11,7 @@ package com.wyplay.wycdn.sampleapp.ui.screens
 
 import android.util.Log
 import android.view.WindowManager
+import androidx.activity.result.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -33,18 +35,25 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Color.Companion.White
@@ -64,9 +73,11 @@ import com.wyplay.wycdn.sampleapp.R
 import com.wyplay.wycdn.sampleapp.ui.components.PlayerComponent
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
+import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfo
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfoState
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -101,8 +112,10 @@ fun PlayerScreen(
     mediaIndex: Int,
     debugInfoState: WycdnDebugInfoState,
     playerInfoViewModel: PlayerInfoViewModel,
+    settingsViewModel: SettingsViewModel,
+    wycdnViewModel: WycdnViewModel,
     modifier: Modifier = Modifier
-    ) {
+) {
     val activity = (LocalContext.current as? MainActivity)
 
     DisposableEffect(Unit) {
@@ -135,7 +148,9 @@ fun PlayerScreen(
                 mediaIndex,
                 debugInfoState,
                 modifier,
-                playerInfoViewModel
+                playerInfoViewModel,
+                settingsViewModel,
+                wycdnViewModel
             )
         }
     }
@@ -186,7 +201,7 @@ class PlayerInfoSender(private var wycdnViewModel: WycdnViewModel)
                     }
                     delay(50L)
                 } catch (e: Exception) {
-                    metricQueue.offer(metric)
+                    metricQueue.offer(metric);
                     break
                 }
             }
@@ -199,7 +214,7 @@ class PlayerInfoSender(private var wycdnViewModel: WycdnViewModel)
         }
     }
 
-    private fun startQueueProcessor() {
+    fun startQueueProcessor() {
         GlobalScope.launch(Dispatchers.IO) {
             while (isActive) {
                 sendMetrics()
@@ -222,7 +237,7 @@ class PlayerInfoSender(private var wycdnViewModel: WycdnViewModel)
 data class PlayerInfo(var resolution: String = "0x0", var state: Int = -1)
 
 class PlayerInfoViewModel(private val playerInfoSender: PlayerInfoSender) : ViewModel() {
-    private val _playerInfo = MutableStateFlow(PlayerInfo())
+    private val _playerInfo = MutableStateFlow(PlayerInfo("0x0", -1))
     val playerInfo: StateFlow<PlayerInfo> = _playerInfo.asStateFlow()
 
     fun updateResolution(resolution: String) {
@@ -231,7 +246,7 @@ class PlayerInfoViewModel(private val playerInfoSender: PlayerInfoSender) : View
     }
 
     fun updateState(state: Int) {
-        _playerInfo.value = _playerInfo.value.copy(state = state)
+        _playerInfo.value.state = state
         playerInfoSender.enqueueMetrics(_playerInfo.value)
     }
 
@@ -268,9 +283,16 @@ private fun PlayerSurface(
     debugInfoState: WycdnDebugInfoState,
     modifier: Modifier = Modifier,
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel,
+    wycdnViewModel: WycdnViewModel
 ) {
-    val resolutionViewModel: ResolutionViewModel = viewModel()
+    var showSettingsMenu by remember { mutableStateOf(false) } // Toggle for settings menu visibility
+
+    val resolutionViewModel: ResolutionViewModel = viewModel() // Ensure proper constructor usage
     val loaderFlag by resolutionViewModel.loaderFlag.collectAsState(initial = false)
+    val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState(initial = false)
+
+
     Box(
         modifier = modifier
             .background(color = Black)
@@ -278,7 +300,6 @@ private fun PlayerSurface(
             .focusable(false),
         contentAlignment = Alignment.Center
     ) {
-        // Keep track of media title across recompositions for the title chip
         var mediaTitle by remember { mutableStateOf(mediaList[mediaIndex].mediaMetadata.title.toString()) }
 
         // Player component
@@ -286,7 +307,6 @@ private fun PlayerSurface(
             mediaList = mediaList,
             mediaIndex = mediaIndex,
             onCurrentMediaMetadataChanged = { mediaMetadata ->
-                // Update the title chip
                 mediaTitle = mediaMetadata.title.toString()
             },
             onVideoSizeChanged = { videoSize ->
@@ -296,12 +316,13 @@ private fun PlayerSurface(
                 playerInfoViewModel.updateState(state)
             }
         )
+
         // Title chip and optional Debug info chip
         Column(
             modifier = Modifier
-                .align(Alignment.TopEnd) // Align to the top end corner
-                .padding(dimensionResource(R.dimen.padding_medium)),  // Padding from the edges of the Box
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)) // Spacing between chips
+                .align(Alignment.TopEnd)
+                .padding(dimensionResource(R.dimen.padding_medium)),
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small))
         ) {
             TitleChip(
                 title = mediaTitle,
@@ -310,8 +331,25 @@ private fun PlayerSurface(
             DebugInfoChip(
                 debugInfoState = debugInfoState,
                 modifier = Modifier.align(Alignment.End),
-                playerInfoViewModel = playerInfoViewModel
+                playerInfoViewModel = playerInfoViewModel,
+                onSettingsClick = { showSettingsMenu = true }
             )
+        }
+
+        if (debugMenuEnabled) {
+            // Settings Menu
+            if (showSettingsMenu) {
+                SettingsMenu(
+                    settingsViewModel = settingsViewModel,
+                    wycdnViewModel = wycdnViewModel,
+                    snackbarHostState = SnackbarHostState(),
+                    coroutineScope = rememberCoroutineScope(),
+                    onDismiss = { showSettingsMenu = false },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp)
+                )
+            }
         }
 
         if (loaderFlag) {
@@ -362,83 +400,38 @@ fun DebugInfoChip(
     debugInfoState: WycdnDebugInfoState,
     modifier: Modifier = Modifier,
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
+    onSettingsClick: () -> Unit
 ) {
     val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo())
     val resolutionViewModel: ResolutionViewModel = viewModel()
     val showResolutionMenuFlag by resolutionViewModel.menuFlagMobile.collectAsState(initial = false)
 
-    val chipModifier = modifier
-        .background(
-            color = Black.copy(alpha = 0.5f), // Lightly transparent background
-            shape = RoundedCornerShape(5.dp) // Lightly rounded corners for the chip
+    Row(
+        modifier = Modifier
+            .background(
+                color = Black.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(5.dp)
+            )
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Resolution: ${playerInfo.resolution}",
+            color = White,
+            style = TextStyle(fontSize = 16.sp)
         )
-        .padding(horizontal = 8.dp, vertical = 4.dp) // Padding inside the chip
-
-    when (debugInfoState) {
-        is WycdnDebugInfoState.Disabled -> {
-            // Show nothing
-        }
-
-        is WycdnDebugInfoState.Loading -> {
-            Text(
-                text = stringResource(R.string.msg_loading_wycdn_debug_info),
-                color = White,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = chipModifier
-            )
-        }
-
-        is WycdnDebugInfoState.Error -> {
-            Text(
-                text = stringResource(R.string.msg_error, debugInfoState.e.message ?: ""),
-                color = White,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = chipModifier
-            )
-        }
-
-        is WycdnDebugInfoState.Ready -> {
-            Column(
-                modifier = chipModifier,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                debugInfoState.debugInfo.toFieldList().forEach { (label, value) ->
-                    Text(
-                        text = "$label: $value",
-                        color = White,
-                        style = MaterialTheme.typography.labelSmall,
-                        textAlign = TextAlign.Left
-                    )
-                }
-                Text(
-                    text = "Resolution: ${playerInfo.resolution}",
-                    color = White,
-                    style = MaterialTheme.typography.labelSmall,
-                    textAlign = TextAlign.Left
-                )
-                Button(
-                    onClick = {
-                        resolutionViewModel.setMenuFlagMobile(!showResolutionMenuFlag)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Transparent),
-                    modifier = Modifier
-                        .padding(1.dp)
-                        .align(Alignment.End)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Resolution",
-                        tint = White
-                    )
-                }
-                if (showResolutionMenuFlag) {
-                    ShowResolutionMenu()
-                }
-            }
-        }
+        Log.d("DebugInfoChip", "Resolution: ${playerInfo.resolution}")
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(
+            imageVector = Icons.Filled.Settings,
+            contentDescription = "Settings",
+            tint = White,
+            modifier = Modifier
+                .size(24.dp)
+                .clickable { onSettingsClick() }
+        )
     }
 }
-
 
 @Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
 @Composable
@@ -447,130 +440,214 @@ fun ShowResolutionMenu() {
     val formats by resolutionViewModel.formats.collectAsState(initial = mutableSetOf())
     val selectedResolutionStr by resolutionViewModel.formatStr.collectAsState(initial = null)
 
+
+    formats.add(Pair(0, 0)) //AUTO
+
+    var expanded by remember { mutableStateOf(false) }
     var selectedResolution by remember {
         mutableStateOf<Pair<Int, Int>?>(null)
     }
 
-    val handleResolutionSelect: (Int, Int, String) -> Unit = { width, height, resolutionStr ->
-        selectedResolution = Pair(width, height)
+
+    val handleResolutionSelect: (Int, Int, String) -> Unit = { height, width, resolutionStr ->
+        selectedResolution = Pair(height, width)
         resolutionViewModel.setMenuFlagMobile(false)
         resolutionViewModel.setLoaderFlag(true)
-        resolutionViewModel.setSelectedResolution(Pair(width, height))
+        resolutionViewModel.setSelectedResolution(Pair(height, width))
         resolutionViewModel.addResolutionFormatStr(resolutionStr)
+        expanded = false
     }
 
     Column(
         modifier = Modifier
-            .width(200.dp)
-            .background(Transparent)
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .background(
-                    White.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(5.dp)
-                )
-                .width(120.dp)
-                .align(Alignment.End)
-        ) {
-            items(formats.toList()) { resolution ->
+        // Label
+        Text(text = "Resolution", color = White)
 
-                val resolutionString = if (resolution.second == 0) {
+        // Selected resolution display with dropdown styling
+        Text(
+            text = selectedResolutionStr ?: "Auto",
+            color = White,
+            style = TextStyle(fontSize = 16.sp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(color = Color.Gray, shape = RoundedCornerShape(4.dp))
+                .clickable { expanded = !expanded }
+                .padding(8.dp)
+        )
+
+        // Dropdown menu
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            formats.toList().forEach { resolution ->
+                val resolutionString = if (resolution?.first == 0) {
                     "Auto"
                 } else {
-                    resolution.second.toString() + "p"
+                    "${resolution?.first ?: 0}p"
                 }
 
-                Row(modifier = Modifier
-                    .clickable {
-                        handleResolutionSelect(
-                            resolution.first,
-                            resolution.second,
-                            resolutionString
-                        )
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = resolutionString, color = Black)
+                            if (resolutionString == selectedResolutionStr) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Selected",
+                                    tint = White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        if (resolution != null) {
+                            handleResolutionSelect(
+                                resolution.first,
+                                resolution.second,
+                                resolutionString
+                            )
+                        }
                     }
-                    .padding(vertical = 1.dp)) {
-                    Text(
-                        text = resolutionString,
-                        modifier = Modifier
-                            .padding(10.dp)
-                            .width(80.dp),
-                        style = TextStyle(
-                            color = White,
-                            fontSize = 12.sp
-                        )
-                    )
-                    if (resolutionString == selectedResolutionStr) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = "Selected",
-                            tint = White,
-                            modifier = Modifier
-                                .size(10.dp)
-                                .align(Alignment.CenterVertically)
-                        )
-                    }
-                }
+                )
             }
         }
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
 @Composable
-fun DebugInfoChipLoadingPreview() {
-    val debugInfoState = WycdnDebugInfoState.Loading
-
-    Box(
-        modifier = Modifier.size(250.dp, 100.dp)
+fun SettingsMenu(
+    modifier: Modifier = Modifier,
+    settingsViewModel: SettingsViewModel,
+    wycdnViewModel: WycdnViewModel,
+    snackbarHostState: SnackbarHostState,
+    coroutineScope: CoroutineScope = rememberCoroutineScope(),
+    onDismiss: () -> Unit
     ) {
-        DebugInfoChip(
-            debugInfoState = debugInfoState,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(dimensionResource(R.dimen.padding_medium))
+
+    // collect the current settings as state for composable to react to changes
+    val selectedWycdnLogLevel by settingsViewModel.wycdnLogLevel.collectAsState(initial = "info")
+    val selectedWyCDNMode by settingsViewModel.wycdnMode.collectAsState(initial = "full")
+
+    // Local state to store the selected settings, initialized with current settings
+    var selectedLogLevel by remember { mutableStateOf(selectedWycdnLogLevel) }
+    var selectedMode by remember { mutableStateOf(selectedWyCDNMode) }
+
+    Column(
+        modifier = modifier
+            .background(
+                color = Black.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(16.dp)
+    ) {
+        ShowResolutionMenu()
+
+        // Log Level Dropdown
+        DropdownOption(
+            label = "Log Level",
+            items = listOf("off", "error", "info", "warn", "debug"),
+            selectedOption = selectedLogLevel,
+            onSelect = { selectedLogLevel = it }
         )
+
+        // WyCDN Mode Dropdown
+        DropdownOption(
+            label = "WyCDN Mode",
+            items = listOf("full", "lite", "cdn"),
+            selectedOption = selectedMode,
+            onSelect = { selectedMode = it }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Button(
+                onClick = { onDismiss() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Gray,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(text = "Cancel")
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = {
+                    // Apply actions: set values in SettingsViewModel
+                    settingsViewModel.setWycdnLogLevel(selectedLogLevel)
+                    settingsViewModel.setWycdnMode(selectedMode)
+                    // restart wycdn to apply new settings
+                    wycdnViewModel.restartService()
+                    // Show Snackbar message
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            message = "Changes applied",
+                            duration = SnackbarDuration.Short,
+                        )
+                    }
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Gray,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(text = "Apply")
+            }
+
+        }
     }
 }
 
-@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
 @Composable
-fun DebugInfoChipErrorPreview() {
-    val debugInfoState = WycdnDebugInfoState.Error(Exception("message"))
+fun DropdownOption(
+    label: String,
+    items: List<String>,
+    selectedOption: String,
+    onSelect: (String) -> Unit // Callback to handle selection
+) {
+    var expanded by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier.size(250.dp, 100.dp)
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp)
     ) {
-        DebugInfoChip(
-            debugInfoState = debugInfoState,
+        Text(text = label, color = White)
+        Text(
+            text = selectedOption,
+            color = White,
+            style = TextStyle(fontSize = 16.sp),
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(dimensionResource(R.dimen.padding_medium))
+                .fillMaxWidth()
+                .background(color = Color.Gray, shape = RoundedCornerShape(4.dp))
+                .clickable { expanded = !expanded }
+                .padding(8.dp)
         )
-    }
-}
 
-@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
-@Composable
-fun DebugInfoChipPreview() {
-    val debugInfoState = WycdnDebugInfoState.Ready(
-        WycdnDebugInfo(
-            peerId = "12345",
-            peerAddress = "192.168.1.1",
-            uploadBandwidth = "10512345",
-            downloadBandwidth = "20512345",
-            ping = "50"
-        )
-    )
-
-    Box(
-        modifier = Modifier.size(250.dp, 300.dp)
-    ) {
-        DebugInfoChip(
-            debugInfoState = debugInfoState,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(dimensionResource(R.dimen.padding_medium))
-        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            items.forEach { item ->
+                DropdownMenuItem(
+                    text = { Text(text = item) },
+                    onClick = {
+                        onSelect(item)  // Call onSelect when an item is clicked
+                        expanded = false
+                    }
+                )
+            }
+        }
     }
 }

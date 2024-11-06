@@ -140,6 +140,42 @@ class SettingsRepository(
         }
     }
 
+    private val _wycdnMode = MutableStateFlow("full")
+    /**
+     * A [Flow] of String representing the WyCDN mode. This flow emits
+     */
+    val wycdnMode: StateFlow<String> = _wycdnMode.asStateFlow()
+
+    /**
+     * Updates the WyCDN mode setting.
+     *
+     * @param mode The String value to be stored as the new setting.
+     */
+    suspend fun setWycdnMode(mode: String) {
+        _wycdnMode.value = mode
+        dataStore.edit { preferences ->
+            preferences[WYCDN_MODE_KEY] = mode
+        }
+    }
+
+    private val _wycdnLogLevel = MutableStateFlow("info")
+    /**
+     * A [Flow] of String representing the WyCDN log level. This flow emits
+     */
+    val wycdnLogLevel: StateFlow<String> = _wycdnLogLevel.asStateFlow()
+
+    /**
+     * Updates the WyCDN log level setting.
+     *
+     * @param logLevel The String value to be stored as the new setting.
+     */
+    suspend fun setWycdnLogLevel(logLevel: String) {
+        _wycdnLogLevel.value = logLevel
+        dataStore.edit { preferences ->
+            preferences[WYCDN_LOG_LEVEL_KEY] = logLevel
+        }
+    }
+
     init {
         // Load settings from the DataStore when application starts
         CoroutineScope(Dispatchers.IO).launch {
@@ -161,6 +197,12 @@ class SettingsRepository(
             preferences[WYCDN_DEBUG_MENU_ENABLED_KEY]?.let { enabled ->
                 _wycdnDebugMenuEnabled.value = enabled
             }
+            preferences[WYCDN_MODE_KEY]?.let { mode ->
+                _wycdnMode.value = mode
+            }
+            preferences[WYCDN_LOG_LEVEL_KEY]?.let { logLevel ->
+                _wycdnLogLevel.value = logLevel
+            }
         }
     }
 
@@ -176,5 +218,11 @@ class SettingsRepository(
 
         /** [Preferences.Key] used to store and retrieve the WyCDN debug menu enabled setting. */
         internal val WYCDN_DEBUG_MENU_ENABLED_KEY = booleanPreferencesKey("wycdn_debug_menu_enabled")
+
+        /** [Preferences.Key] used to store and retrieve the WyCDN mode setting. */
+        internal val WYCDN_MODE_KEY = stringPreferencesKey("wycdn_mode")
+
+        /** [Preferences.Key] used to store and retrieve the WyCDN log level setting. */
+        internal val WYCDN_LOG_LEVEL_KEY = stringPreferencesKey("wycdn_log_level")
     }
 }

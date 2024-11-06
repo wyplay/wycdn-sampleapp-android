@@ -95,6 +95,34 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         }
     }
 
+    /** Expose Mode state as a StateFlow */
+    val wycdnMode: StateFlow<String> = repository.wycdnMode
+
+    /**
+     * Sets the value of the WyCDN mode.
+     *
+     * @param mode The new mode value to set.
+     */
+    fun setWycdnMode(mode: String) {
+        viewModelScope.launch {
+            repository.setWycdnMode(mode)
+        }
+    }
+
+    /** Expose Log Level state as a StateFlow */
+    val wycdnLogLevel: StateFlow<String> = repository.wycdnLogLevel
+
+    /**
+     * Sets the value of the WyCDN log level.
+     *
+     * @param logLevel The new log level value to set.
+     */
+    fun setWycdnLogLevel(logLevel: String) {
+        viewModelScope.launch {
+            repository.setWycdnLogLevel(logLevel)
+        }
+    }
+
     companion object {
         /**
          * A factory for creating instances of [SettingsViewModel] with required dependencies.

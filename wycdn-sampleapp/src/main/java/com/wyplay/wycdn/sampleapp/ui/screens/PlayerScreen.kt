@@ -584,11 +584,11 @@ fun SettingsMenu(
 
             Button(
                 onClick = {
+                    // Apply actions: set values in SettingViewModel
                     // Apply actions: set values in SettingsViewModel
                     settingsViewModel.setWycdnLogLevel(selectedLogLevel)
                     settingsViewModel.setWycdnMode(selectedMode)
-                    // restart wycdn to apply new settings
-                    wycdnViewModel.restartService()
+
                     // Show Snackbar message
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(

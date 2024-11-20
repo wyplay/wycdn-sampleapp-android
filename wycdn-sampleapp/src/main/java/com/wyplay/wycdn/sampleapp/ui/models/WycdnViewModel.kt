@@ -114,9 +114,9 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
                 if (wycdnDownloadMetricsEnabled) "1" else "0"
             )
 
-            // set log_level and mode properties
-            wycdn.setConfigProperty("wycdn.agent.log_level", wycdnLoglevel)
-            wycdn.setConfigProperty("wycdn.agent.mode", wycdnMode)
+
+            wycdn.setLogLevel(wycdnLoglevel)
+            wycdn.setUserConfigProperty("wycdn.agent.mode", wycdnMode)
 
 
             // Allow calling REST routes for debugging
@@ -179,6 +179,7 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 }
+
 
 /**
  * Represents the state of WyCDN debug info, encapsulating different states for UI rendering.

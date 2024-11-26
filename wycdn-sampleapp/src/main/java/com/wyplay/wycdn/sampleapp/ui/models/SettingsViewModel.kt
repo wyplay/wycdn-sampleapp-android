@@ -60,9 +60,9 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
      * @param enable The new Boolean value to set.
      */
     fun setWycdnDownloadMetricsEnabled(enabled: Boolean) {
-       viewModelScope.launch {
-           repository.setWycdnDownloadMetricsEnabled(enabled)
-       }
+        viewModelScope.launch {
+            repository.setWycdnDownloadMetricsEnabled(enabled)
+        }
     }
 
     /**

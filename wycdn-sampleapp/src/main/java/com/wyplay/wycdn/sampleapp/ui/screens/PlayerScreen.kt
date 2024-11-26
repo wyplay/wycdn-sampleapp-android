@@ -342,6 +342,7 @@ private fun PlayerSurface(
                 SettingsMenu(
                     settingsViewModel = settingsViewModel,
                     wycdnViewModel = wycdnViewModel,
+                    playerInfoViewModel = playerInfoViewModel,
                     snackbarHostState = SnackbarHostState(),
                     coroutineScope = rememberCoroutineScope(),
                     onDismiss = { showSettingsMenu = false },
@@ -435,28 +436,59 @@ fun DebugInfoChip(
 
 @Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
 @Composable
-fun ShowResolutionMenu() {
+fun ShowResolutionMenu(
+    playerInfoViewModel: PlayerInfoViewModel
+) {
     val resolutionViewModel: ResolutionViewModel = viewModel()
     val formats by resolutionViewModel.formats.collectAsState(initial = mutableSetOf())
-    val selectedResolutionStr by resolutionViewModel.formatStr.collectAsState(initial = null)
+    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo())
 
-
-    formats.add(Pair(0, 0)) //AUTO
-
-    var expanded by remember { mutableStateOf(false) }
-    var selectedResolution by remember {
-        mutableStateOf<Pair<Int, Int>?>(null)
+    // Dynamically add resolutions from playerInfo.resolutions
+    playerInfo.resolution?.forEach { resolution ->
+        val parts = resolution.toString().split("x")
+        if (parts.size == 2) {
+            val width = parts[0].toIntOrNull() ?: 0
+            val height = parts[1].toIntOrNull() ?: 0
+            formats.add(Pair(height, width))
+        }
     }
 
+    // Add "Auto" to formats if not already added
+    formats.add(Pair(0, 0)) // Represents "Auto"
 
+    // Parse playerInfo.resolution (e.g., "640x360")
+    val playerResolutionPair = playerInfo.resolution?.let { resolutionStr ->
+        val parts = resolutionStr.split("x")
+        if (parts.size == 2) {
+            Pair(parts[1].toIntOrNull() ?: 0, parts[0].toIntOrNull() ?: 0)
+        } else {
+            Pair(0, 0) // Default to "Auto" if parsing fails
+        }
+    } ?: Pair(0, 0)
+
+    Log.d("ShowResolutionMenu", "playerInfo.resolution: ${playerInfo.resolution}")
+    Log.d("ShowResolutionMenu", "playerResolutionPair: $playerResolutionPair")
+
+    // Initialize selectedResolution and text
+    var selectedResolution by remember { mutableStateOf(playerResolutionPair) }
+    var selectedResolutionText by remember {
+        mutableStateOf(
+            if (selectedResolution.first == 0) "Auto" else "${selectedResolution.first}p"
+        )
+    }
+
+    // Handle resolution selection from the dropdown
     val handleResolutionSelect: (Int, Int, String) -> Unit = { height, width, resolutionStr ->
         selectedResolution = Pair(height, width)
+        selectedResolutionText = resolutionStr
         resolutionViewModel.setMenuFlagMobile(false)
         resolutionViewModel.setLoaderFlag(true)
         resolutionViewModel.setSelectedResolution(Pair(height, width))
         resolutionViewModel.addResolutionFormatStr(resolutionStr)
-        expanded = false
     }
+
+    // Dropdown expanded state
+    var expanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -466,9 +498,9 @@ fun ShowResolutionMenu() {
         // Label
         Text(text = "Resolution", color = White)
 
-        // Selected resolution display with dropdown styling
+        // Display selected resolution with dropdown styling
         Text(
-            text = selectedResolutionStr ?: "Auto",
+            text = selectedResolutionText,
             color = White,
             style = TextStyle(fontSize = 16.sp),
             modifier = Modifier
@@ -484,17 +516,18 @@ fun ShowResolutionMenu() {
             onDismissRequest = { expanded = false }
         ) {
             formats.toList().forEach { resolution ->
-                val resolutionString = if (resolution?.first == 0) {
+                val resolutionHeight = resolution?.first
+                val resolutionString = if (resolutionHeight == 0) {
                     "Auto"
                 } else {
-                    "${resolution?.first ?: 0}p"
+                    "${resolutionHeight}p"
                 }
 
                 DropdownMenuItem(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(text = resolutionString, color = Black)
-                            if (resolutionString == selectedResolutionStr) {
+                            if (resolutionString == selectedResolutionText) {
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
@@ -512,6 +545,7 @@ fun ShowResolutionMenu() {
                                 resolution.second,
                                 resolutionString
                             )
+                            expanded = false
                         }
                     }
                 )
@@ -523,20 +557,22 @@ fun ShowResolutionMenu() {
 @Composable
 fun SettingsMenu(
     modifier: Modifier = Modifier,
-    settingsViewModel: SettingsViewModel,
     wycdnViewModel: WycdnViewModel,
+    playerInfoViewModel: PlayerInfoViewModel,
+    settingsViewModel: SettingsViewModel,
     snackbarHostState: SnackbarHostState,
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
     onDismiss: () -> Unit
-    ) {
+) {
 
     // collect the current settings as state for composable to react to changes
-    val selectedWycdnLogLevel by settingsViewModel.wycdnLogLevel.collectAsState(initial = "info")
-    val selectedWyCDNMode by settingsViewModel.wycdnMode.collectAsState(initial = "full")
+    val selectedWycdnLogLevel by settingsViewModel.wycdnLogLevel.collectAsState()
+    val selectedWyCDNMode by settingsViewModel.wycdnMode.collectAsState()
 
     // Local state to store the selected settings, initialized with current settings
     var selectedLogLevel by remember { mutableStateOf(selectedWycdnLogLevel) }
     var selectedMode by remember { mutableStateOf(selectedWyCDNMode) }
+
 
     Column(
         modifier = modifier
@@ -546,7 +582,7 @@ fun SettingsMenu(
             )
             .padding(16.dp)
     ) {
-        ShowResolutionMenu()
+        ShowResolutionMenu(playerInfoViewModel)
 
         // Log Level Dropdown
         DropdownOption(
@@ -554,6 +590,7 @@ fun SettingsMenu(
             items = listOf("off", "error", "info", "warn", "debug"),
             selectedOption = selectedLogLevel,
             onSelect = { selectedLogLevel = it }
+
         )
 
         // WyCDN Mode Dropdown
@@ -584,10 +621,10 @@ fun SettingsMenu(
 
             Button(
                 onClick = {
-                    // Apply actions: set values in SettingViewModel
-                    // Apply actions: set values in SettingsViewModel
-                    settingsViewModel.setWycdnLogLevel(selectedLogLevel)
                     settingsViewModel.setWycdnMode(selectedMode)
+                    settingsViewModel.setWycdnLogLevel(selectedLogLevel)
+                    wycdnViewModel.updateWycdnMode()
+                    wycdnViewModel.updateWycdnLogLevel()
 
                     // Show Snackbar message
                     coroutineScope.launch {

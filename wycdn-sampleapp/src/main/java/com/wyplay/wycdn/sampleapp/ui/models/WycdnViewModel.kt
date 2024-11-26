@@ -88,8 +88,6 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
             // Collect settings values
             val wycdnEnv = app.settingsRepository.wycdnEnvironment.value
             val wycdnDownloadMetricsEnabled = app.settingsRepository.wycdnDownloadMetricsEnabled.value
-            val wycdnLoglevel = app.settingsRepository.wycdnLogLevel.value
-            val wycdnMode = app.settingsRepository.wycdnMode.value
 
             // Stop the service
             wycdn.unbindService()
@@ -115,16 +113,27 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
             )
 
 
-            wycdn.setLogLevel(wycdnLoglevel)
-            wycdn.setUserConfigProperty("wycdn.agent.mode", wycdnMode)
-
-
             // Allow calling REST routes for debugging
             wycdn.setConfigProperty("wycdn.proxy.server_address", "0.0.0.0")
 
             // Start the service
             wycdn.bindService()
         }
+    }
+
+    fun updateWycdnMode() {
+        val app: SampleApp = getApplication()
+        val wycdnMode = app.settingsRepository.wycdnMode.value
+
+        Log.d(TAG, "Updating WyCDN mode to $wycdnMode")
+        wycdn.setUserConfigProperty("wycdn.agent.mode", wycdnMode)
+    }
+
+    fun updateWycdnLogLevel() {
+        val app: SampleApp = getApplication()
+        val wycdnLoglevel = app.settingsRepository.wycdnLogLevel.value
+        Log.d(TAG, "Updating WyCDN log level to $wycdnLoglevel")
+        wycdn.setLogLevel(wycdnLoglevel)
     }
 
     /**

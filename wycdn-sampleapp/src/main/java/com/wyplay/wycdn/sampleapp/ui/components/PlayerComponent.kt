@@ -170,6 +170,7 @@ fun PlayerComponent(
                             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
                             PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
                             PlaybackException.ERROR_CODE_PARSING_CONTAINER_MALFORMED,
+                            PlaybackException.ERROR_CODE_PARSING_MANIFEST_MALFORMED,
                             PlaybackException.ERROR_CODE_DECODING_FAILED -> {
                                 Log.d("player", "PlaybackException: ${error.message}")
                                 seekToDefaultPosition()

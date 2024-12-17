@@ -99,6 +99,7 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
             wycdn.setConfigProperty("wycdn.agent.peer_id", peerId)
             wycdn.setConfigProperty("wycdn.agent.stun", wycdnEnv.stunHostname)
             wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
+            wycdn.setConfigProperty("wycdn.peer.bootstrap.host", wycdnEnv.bootstrapHostname)
             wycdn.setConfigProperty("wycdn.influxdb.host", wycdnEnv.influxdbHostname)
             wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
             wycdn.setConfigProperty("wycdn.config.remote.server", wycdnEnv.remoteConfigHostname)

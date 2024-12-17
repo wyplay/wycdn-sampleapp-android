@@ -9,6 +9,7 @@
 
 package com.wyplay.wycdn.sampleapp.ui.models
 
+import android.os.Build
 import android.text.Html
 import android.util.Log
 import androidx.media3.common.MediaItem
@@ -57,7 +58,11 @@ class MediaRemoteDataSource(private val url: String?) : MediaDataSource {
             val channelJson = channelsJson.getJSONObject(i)
             val channelId = channelJson.getString("id")
             val channelManifestUri = channelJson.getString("manifest")
-            val channelName = Html.fromHtml(channelJson.getString("name"), Html.FROM_HTML_MODE_COMPACT).toString()
+            val channelName =
+                when (Build.VERSION.SDK_INT) {
+                    in 1..24 -> Html.fromHtml(channelJson.getString("name")).toString()
+                    else -> Html.fromHtml(channelJson.getString("name"), Html.FROM_HTML_MODE_COMPACT).toString()
+                }
             val channelUri = when {
                 channelManifestUri.endsWith(".mpd") || channelManifestUri.endsWith("manifest")
                         || channelManifestUri.endsWith(".m3u8") || channelManifestUri.endsWith(".mp3") -> {

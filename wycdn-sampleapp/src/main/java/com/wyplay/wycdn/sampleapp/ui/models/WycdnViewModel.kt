@@ -74,14 +74,13 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         // Stop the WyCDN service when the view model is destroyed
         wycdn.unbindService()
+        super.onCleared()
     }
 
     /**
      * Restarts the WyCDN service using current settings.
      */
     fun restartService() {
-        // We use a viewModelScope to launch a coroutine, ensuring that the collection of settings
-        // and the subsequent service restart are bound to the lifecycle of the ViewModel.
         viewModelScope.launch {
             val app: SampleApp = getApplication()
 
@@ -113,28 +112,25 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
                 if (wycdnDownloadMetricsEnabled) "1" else "0"
             )
 
-
             // Allow calling REST routes for debugging
             wycdn.setConfigProperty("wycdn.proxy.server_address", "0.0.0.0")
-
             // Start the service
             wycdn.bindService()
         }
     }
 
-    fun updateWycdnMode() {
-        val app: SampleApp = getApplication()
-        val wycdnMode = app.settingsRepository.wycdnMode.value
-
-        Log.d(TAG, "Updating WyCDN mode to $wycdnMode")
-        wycdn.setUserConfigProperty("wycdn.agent.mode", wycdnMode)
+    /**
+     * Updates the WyCDN mode at all configuration levels
+     */
+    fun updateWycdnMode(mode: String) {
+        Log.d(TAG, "Updating WyCDN mode to $mode")
+        wycdn.setMode(mode)
+        
     }
 
-    fun updateWycdnLogLevel() {
-        val app: SampleApp = getApplication()
-        val wycdnLoglevel = app.settingsRepository.wycdnLogLevel.value
-        Log.d(TAG, "Updating WyCDN log level to $wycdnLoglevel")
-        wycdn.setLogLevel(wycdnLoglevel)
+    fun updateWycdnLogLevel(logLevel: String) {
+        Log.d(TAG, "Updating WyCDN log level to $logLevel")
+        wycdn.setLogLevel(logLevel)
     }
 
     /**

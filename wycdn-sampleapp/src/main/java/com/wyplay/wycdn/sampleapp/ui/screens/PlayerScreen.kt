@@ -564,15 +564,9 @@ fun SettingsMenu(
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
     onDismiss: () -> Unit
 ) {
-
-    // collect the current settings as state for composable to react to changes
-    val selectedWycdnLogLevel by settingsViewModel.wycdnLogLevel.collectAsState()
-    val selectedWyCDNMode by settingsViewModel.wycdnMode.collectAsState()
-
-    // Local state to store the selected settings, initialized with current settings
-    var selectedLogLevel by remember { mutableStateOf(selectedWycdnLogLevel) }
-    var selectedMode by remember { mutableStateOf(selectedWyCDNMode) }
-
+    // Local state to store the selected settings
+    var selectedLogLevel by remember { mutableStateOf("info") } // default value
+    var selectedMode by remember { mutableStateOf("full") } // default value
 
     Column(
         modifier = modifier
@@ -590,7 +584,6 @@ fun SettingsMenu(
             items = listOf("off", "error", "info", "warn", "debug"),
             selectedOption = selectedLogLevel,
             onSelect = { selectedLogLevel = it }
-
         )
 
         // WyCDN Mode Dropdown
@@ -621,10 +614,9 @@ fun SettingsMenu(
 
             Button(
                 onClick = {
-                    settingsViewModel.setWycdnMode(selectedMode)
-                    settingsViewModel.setWycdnLogLevel(selectedLogLevel)
-                    wycdnViewModel.updateWycdnMode()
-                    wycdnViewModel.updateWycdnLogLevel()
+                    // Directly update the WycdnViewModel with selected values
+                    wycdnViewModel.updateWycdnMode(selectedMode)
+                    wycdnViewModel.updateWycdnLogLevel(selectedLogLevel)
 
                     // Show Snackbar message
                     coroutineScope.launch {
@@ -642,7 +634,6 @@ fun SettingsMenu(
             ) {
                 Text(text = "Apply")
             }
-
         }
     }
 }

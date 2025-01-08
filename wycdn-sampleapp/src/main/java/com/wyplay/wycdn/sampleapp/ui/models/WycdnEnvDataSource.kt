@@ -56,6 +56,8 @@ class WycdnEnvDataSource(private val assets: AssetManager) {
                 id = jsonObject.getString("id"),
                 name = jsonObject.getString("name"),
                 bootstrapHostname = jsonObject.getString("bootstrapHostname"),
+                bootstrapPort = if (jsonObject.has("bootstrapPort")) jsonObject.getString("bootstrapPort") else null,
+                customerId = if (jsonObject.has("CustomerId")) jsonObject.getString("CustomerId") else null,
                 stunHostname = jsonObject.getString("stunHostname"),
                 influxdbHostname = jsonObject.getString("influxdbHostname"),
                 graylogHostname = jsonObject.getString("graylogHostname"),
@@ -104,6 +106,8 @@ data class WycdnEnvList(
  * @property id Identifier of the environment.
  * @property name Descriptive name of the environment.
  * @property bootstrapHostname Hostname of the bootstrap node.
+ * @property bootstrapPort Port of the bootstrap node.
+ * @property customerId Customer ID of the environment.
  * @property stunHostname Hostname of the STUN server.
  * @property influxdbHostname Hostname of the InfluxDB Telegraf endpoint.
  * @property graylogHostname Hostname of the Graylog endpoint.
@@ -114,6 +118,8 @@ data class WycdnEnv(
     val id: String,
     val name: String,
     val bootstrapHostname: String,
+    val bootstrapPort: String?,
+    val customerId: String?,
     val stunHostname: String,
     val influxdbHostname: String,
     val graylogHostname: String,

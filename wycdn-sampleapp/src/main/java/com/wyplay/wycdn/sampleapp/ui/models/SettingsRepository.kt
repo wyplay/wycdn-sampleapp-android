@@ -24,6 +24,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.SupervisorJob
 
 // See: https://developer.android.com/topic/libraries/architecture/datastore
 
@@ -140,6 +143,7 @@ class SettingsRepository(
         }
     }
 
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val _wycdnMode = MutableStateFlow("full")
     /**
      * A [Flow] of String representing the WyCDN mode. This flow emits
@@ -148,6 +152,7 @@ class SettingsRepository(
 
     /**
      * Updates the WyCDN mode setting.
+     * Note: This will persist the mode but it will reset to "full" on app restart
      *
      * @param mode The String value to be stored as the new setting.
      */
@@ -156,6 +161,13 @@ class SettingsRepository(
         dataStore.edit { preferences ->
             preferences[WYCDN_MODE_KEY] = mode
         }
+    }
+
+    /**
+     * Forces reset to default "full" mode
+     */
+    suspend fun resetToDefaultMode() {
+        setWycdnMode("full")
     }
 
     private val _wycdnLogLevel = MutableStateFlow("info")
@@ -178,22 +190,23 @@ class SettingsRepository(
 
     init {
         // Load settings from the DataStore when application starts
-        CoroutineScope(Dispatchers.IO).launch {
+        coroutineScope.launch {
             val preferences = dataStore.data.first()
-
+            
+            // Don't load the saved mode, always start with "full"
+            _wycdnMode.value = "full"
+            
+            // Load other preferences...
             preferences[WYCDN_ENVIRONMENT_KEY]?.let { envId ->
                 _wycdnEnvironment.value = wycdnEnvironmentList.envList.firstOrNull { it.id == envId }
                     ?: wycdnEnvironmentList.defaultEnv
             }
-
             preferences[WYCDN_DOWNLOAD_METRICS_ENABLED]?.let { enabled ->
                 _wycdnDownloadMetricsEnabled.value = enabled
             }
-
             preferences[WYCDN_DEBUG_INFO_ENABLED_KEY]?.let { enabled ->
                 _wycdnDebugInfoEnabled.value = enabled
             }
-
             preferences[WYCDN_DEBUG_MENU_ENABLED_KEY]?.let { enabled ->
                 _wycdnDebugMenuEnabled.value = enabled
             }

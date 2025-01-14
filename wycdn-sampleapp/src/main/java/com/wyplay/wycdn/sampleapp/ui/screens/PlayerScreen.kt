@@ -564,9 +564,14 @@ fun SettingsMenu(
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
     onDismiss: () -> Unit
 ) {
-    // Local state to store the selected settings
-    var selectedLogLevel by remember { mutableStateOf("info") } // default value
-    var selectedMode by remember { mutableStateOf("full") } // default value
+    val wycdnMode by wycdnViewModel.wycdnMode.collectAsState()
+    var selectedMode by remember { mutableStateOf(wycdnMode) }
+    var selectedLogLevel by remember { mutableStateOf("info") }
+
+    // Update UI when wycdnMode changes
+    LaunchedEffect(wycdnMode) {
+        selectedMode = wycdnMode
+    }
 
     Column(
         modifier = modifier
@@ -614,11 +619,10 @@ fun SettingsMenu(
 
             Button(
                 onClick = {
-                    // Directly update the WycdnViewModel with selected values
                     wycdnViewModel.updateWycdnMode(selectedMode)
+                    settingsViewModel.setWycdnMode(selectedMode)
                     wycdnViewModel.updateWycdnLogLevel(selectedLogLevel)
 
-                    // Show Snackbar message
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar(
                             message = "Changes applied",

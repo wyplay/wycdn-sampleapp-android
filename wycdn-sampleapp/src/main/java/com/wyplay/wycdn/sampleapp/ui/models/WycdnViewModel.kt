@@ -51,6 +51,8 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
     // Backing property for debug info state, initially set to Disabled.
     private val _debugInfoState = MutableStateFlow<WycdnDebugInfoState>(WycdnDebugInfoState.Disabled)
 
+    // Property providing the Android application instance.
+    private val app: SampleApp = getApplication()
     /**
      * Property providing [WycdnDebugInfoState] as a [StateFlow], allowing the UI to observe changes to the debug info state.
      * This flow starts in the Disabled state and updates as the debug info is loaded or if an error occurs.
@@ -66,9 +68,19 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
         "${Build.PRODUCT}-$androidId"
     }
 
+    /* _wycdnMode is a private mutable state flow representing the current WyCDN mode. */
+    private val _wycdnMode = MutableStateFlow("full")
+    /* a public read-only state flow providing the current WyCDN mode. */
+    val wycdnMode: StateFlow<String> = _wycdnMode.asStateFlow()
+
     init {
-        // Update WyCDN debug information periodically
-        updateWycdnDebugInfo()
+        viewModelScope.launch {
+            // Always start with "full" mode
+            app.settingsRepository.resetToDefaultMode()
+            
+            // Update WyCDN debug information periodically
+            updateWycdnDebugInfo()
+        }
     }
 
     override fun onCleared() {
@@ -136,9 +148,12 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
      * Updates the WyCDN mode at all configuration levels
      */
     fun updateWycdnMode(mode: String) {
-        Log.d(TAG, "Updating WyCDN mode to $mode")
-        wycdn.setMode(mode)
-        
+        viewModelScope.launch {
+            _wycdnMode.value = mode
+            wycdn.setMode(mode)
+            // Update settings repository to keep UI in sync
+            app.settingsRepository.setWycdnMode(mode)
+        }
     }
 
     fun updateWycdnLogLevel(logLevel: String) {

@@ -114,16 +114,15 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
             // for wycdn agent versions < 0.7.18 we use "wycdn.agent.peer.bootstrap"
             wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
             wycdn.setConfigProperty("wycdn.peer.bootstrap.host", wycdnEnv.bootstrapHostname)
-            // set port if available
-            if (wycdnEnv.bootstrapPort != null) {
-                wycdn.setConfigProperty("wycdn.peer.bootstrap.port", wycdnEnv.bootstrapPort)               
 
-            }
-            // Set customer ID if available
-            if (wycdnEnv.customerId != null) {
-                wycdn.setConfigProperty("wycdn.customer.id", wycdnEnv.customerId)
-            }
-            
+            // set port if available
+            if (wycdnEnv.bootstrapPort != null)
+                wycdn.setConfigProperty("wycdn.peer.bootstrap.port", wycdnEnv.bootstrapPort)
+
+            // Set customer network ID if available
+            if (wycdnEnv.customerNetworkId != null)
+                wycdn.setConfigProperty("wycdn.peer.customer_network_id", wycdnEnv.customerNetworkId)
+
             wycdn.setConfigProperty("wycdn.influxdb.host", wycdnEnv.influxdbHostname)
             wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
             wycdn.setConfigProperty("wycdn.config.remote.server", wycdnEnv.remoteConfigHostname)

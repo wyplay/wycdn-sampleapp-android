@@ -148,7 +148,7 @@ fun PlayerComponent(
      */
     fun initializePlayer() {
         player = ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(context).setLiveTargetOffsetMs(0))
+            .setMediaSourceFactory(DefaultMediaSourceFactory(context).setLiveTargetOffsetMs(10000))
             .build().apply {
                 // Set the media items to play
                 setMediaItems(mediaList, mediaItemIndex, C.TIME_UNSET)

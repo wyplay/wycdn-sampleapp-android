@@ -11,6 +11,7 @@ package com.wyplay.wycdn.sampleapp.ui.models
 
 import android.content.res.AssetManager
 import android.os.Build
+import android.os.Bundle
 import android.text.Html
 import android.util.Log
 import androidx.media3.common.MediaItem
@@ -53,25 +54,13 @@ class MediaBuiltinDataSource(private val assets: AssetManager) : MediaDataSource
         for (i in 0 until channelsJson.length()) {
             val channelJson = channelsJson.getJSONObject(i)
             val channelId = channelJson.getString("id")
-            val channelManifestUri = channelJson.getString("manifest")
+            val channelUri = channelJson.getString("manifest")
+            val channelFormat = channelJson.optString("format", "cdn")
             val channelName =
                 when (Build.VERSION.SDK_INT) {
                     in 1..24 -> Html.fromHtml(channelJson.getString("name")).toString()
                     else -> Html.fromHtml(channelJson.getString("name"), Html.FROM_HTML_MODE_COMPACT).toString()
                 }
-            val channelUri = when {
-                channelManifestUri.endsWith(".mpd") || channelManifestUri.endsWith("manifest")
-                        || channelManifestUri.endsWith(".m3u8") || channelManifestUri.endsWith(".mp3") -> {
-                    channelManifestUri.replace("http://", "https://")
-                }
-                else -> {
-                    Log.w(
-                        TAG,
-                        "Media: $channelName => Unsupported manifest URI: $channelManifestUri"
-                    )
-                    continue
-                }
-            }
 
             Log.d(TAG, "Media: $channelName => $channelUri")
 
@@ -81,6 +70,9 @@ class MediaBuiltinDataSource(private val assets: AssetManager) : MediaDataSource
                 .setMediaMetadata(
                     MediaMetadata.Builder()
                         .setTitle(channelName)
+                        .setExtras(Bundle().apply {
+                            putString("format", channelFormat)
+                        })
                         .build()
                 )
                 .build()

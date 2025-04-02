@@ -43,30 +43,32 @@ class MediaRepository(private val mediaBuiltinDataSource: MediaDataSource, priva
             val mediaId = mediaItem.mediaId
             val mediaUri = mediaItem.localConfiguration!!.uri
             val mediaTitle = mediaItem.mediaMetadata.title.toString()
+            val mediaFormat = mediaItem.mediaMetadata.extras?.getString("format")?.uppercase()
 
-            // CDN
             val directMediaItem = MediaItem.Builder()
                 .setMediaId(mediaId)
                 .setUri(mediaUri)
                 .setMediaMetadata(
                     MediaMetadata.Builder()
-                        .setTitle(mediaTitle)
+                        .setTitle("$mediaTitle ($mediaFormat)")
                         .build()
                 )
                 .build()
             mediaList.add(directMediaItem)
 
-            // WyCDN
-            val wycdnMediaItem = MediaItem.Builder()
-                .setMediaId(mediaId)
-                .setUri(toWycdnURI(mediaUri))
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setTitle("$mediaTitle (WyCDN)")
-                        .build()
-                )
-                .build()
-            mediaList.add(wycdnMediaItem)
+            if (mediaFormat == "CDN") {
+                // Convert to V0
+                val wycdnMediaItem = MediaItem.Builder()
+                    .setMediaId(mediaId)
+                    .setUri(toWycdnURI(mediaUri))
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle("$mediaTitle (V0)")
+                            .build()
+                    )
+                    .build()
+                mediaList.add(wycdnMediaItem)
+            }
         }
 
         return mediaList

@@ -85,6 +85,7 @@ class MediaRepository(private val mediaBuiltinDataSource: MediaDataSource, priva
             .scheme("http")
             .encodedAuthority("127.0.0.1:8000")
             .encodedPath("/wycdn/https/${uri.host}${uri.encodedPath}")
+            .encodedQuery(uri.query)
             .build()
     }
 }

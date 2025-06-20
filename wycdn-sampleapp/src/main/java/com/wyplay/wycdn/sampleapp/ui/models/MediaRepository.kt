@@ -12,6 +12,7 @@ package com.wyplay.wycdn.sampleapp.ui.models
 import android.net.Uri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import java.net.URLEncoder
 
 // See: https://developer.android.com/topic/architecture/data-layer
 
@@ -58,16 +59,31 @@ class MediaRepository(private val mediaBuiltinDataSource: MediaDataSource, priva
 
             if (mediaFormat == "CDN") {
                 // Convert to V0
-                val wycdnMediaItem = MediaItem.Builder()
-                    .setMediaId(mediaId)
-                    .setUri(toWycdnURI(mediaUri))
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle("$mediaTitle (V0)")
-                            .build()
-                    )
-                    .build()
-                mediaList.add(wycdnMediaItem)
+                run {
+                    val wycdnMediaItem = MediaItem.Builder()
+                        .setMediaId(mediaId)
+                        .setUri(toWycdnUriV0(mediaUri))
+                        .setMediaMetadata(
+                            MediaMetadata.Builder()
+                                .setTitle("$mediaTitle (V0)")
+                                .build()
+                        )
+                        .build()
+                    mediaList.add(wycdnMediaItem)
+                }
+                // Convert to V1
+                run {
+                    val wycdnMediaItem = MediaItem.Builder()
+                        .setMediaId(mediaId)
+                        .setUri(toWycdnUriV1(mediaUri, mediaId))
+                        .setMediaMetadata(
+                            MediaMetadata.Builder()
+                                .setTitle("$mediaTitle (V1)")
+                                .build()
+                        )
+                        .build()
+                    mediaList.add(wycdnMediaItem)
+                }
             }
         }
 
@@ -75,16 +91,42 @@ class MediaRepository(private val mediaBuiltinDataSource: MediaDataSource, priva
     }
 
     /**
-     * Converts an URI to a WyCDN URI.
+     * Converts an URI to a WyCDN v0 URI.
      *
      * @param uri The original URI.
      * @return The converted URI.
      */
-    private fun toWycdnURI(uri: Uri): Uri {
+    private fun toWycdnUriV0(uri: Uri): Uri {
         return Uri.Builder()
             .scheme("http")
             .encodedAuthority("127.0.0.1:8000")
             .encodedPath("/wycdn/https/${uri.host}${uri.encodedPath}")
+            .encodedQuery(uri.query)
+            .build()
+    }
+
+    /**
+     * Converts an URI to a WyCDN v1 URI.
+     *
+     * @param uri The original URI.
+     * @return The converted URI.
+     */
+    private fun toWycdnUriV1(uri: Uri, channelId: String, mode: String = "auto"): Uri {
+        val port = if (uri.port > 0) uri.port else if (uri.scheme == "http") 80 else 443
+
+        val baseUri = Uri.Builder()
+            .scheme(uri.scheme)
+            .encodedAuthority("${uri.host}:${port}")
+            .build()
+
+        val originalPath = uri.encodedPath
+        val baseUriString = baseUri.toString()
+        val encodedBaseUrl = URLEncoder.encode(baseUri.toString(), "UTF-8")
+
+        return Uri.Builder()
+            .scheme("http")
+            .encodedAuthority("127.0.0.1:8000")
+            .encodedPath("/wycdn/v1/get/${channelId}/${mode}/${encodedBaseUrl}${originalPath}")
             .encodedQuery(uri.query)
             .build()
     }

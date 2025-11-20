@@ -59,7 +59,7 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
      */
     val debugInfoState: StateFlow<WycdnDebugInfoState> = _debugInfoState.asStateFlow()
 
-    var influxdbHostname: String = ""
+    var metricsDebugHostname: String = ""
 
     /** Identifier to use for our peer. */
     val peerId: String by lazy {
@@ -123,16 +123,18 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
             if (wycdnEnv.customerNetworkId != null)
                 wycdn.setConfigProperty("wycdn.peer.customer_network_id", wycdnEnv.customerNetworkId)
 
-            wycdn.setConfigProperty("wycdn.influxdb.host", wycdnEnv.influxdbHostname)
+            wycdn.setConfigProperty("wycdn.metrics.debug.host", wycdnEnv.metricsDebugHostname)
+            wycdn.setConfigProperty("wycdn.metrics.monitoring.host", wycdnEnv.metricsMonitoringHostname)
+            wycdn.setConfigProperty("wycdn.metrics.billing.host", wycdnEnv.metricsBillingHostname)
             wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
             wycdn.setConfigProperty("wycdn.config.remote.server", wycdnEnv.remoteConfigHostname)
             wycdn.setConfigProperty("wycdn.config.remote.refresh_period_sec", wycdnEnv.remoteConfigPeriodSec)
 
-            influxdbHostname = wycdnEnv.influxdbHostname
+            metricsDebugHostname = wycdnEnv.metricsDebugHostname
 
             // Set the download metrics enabled property
             wycdn.setConfigProperty(
-                "wycdn.influxdb.send_download_metrics",
+                "wycdn.metrics.debug.send_download_metrics",
                 if (wycdnDownloadMetricsEnabled) "1" else "0"
             )
 

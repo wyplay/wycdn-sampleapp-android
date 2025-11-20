@@ -59,7 +59,9 @@ class WycdnEnvDataSource(private val assets: AssetManager) {
                 bootstrapPort = if (jsonObject.has("bootstrapPort")) jsonObject.getString("bootstrapPort") else null,
                 customerNetworkId = if (jsonObject.has("customerNetworkId")) jsonObject.getString("customerNetworkId") else null,
                 stunHostname = jsonObject.getString("stunHostname"),
-                influxdbHostname = jsonObject.getString("influxdbHostname"),
+                metricsDebugHostname = jsonObject.optString("metricsDebugHostname", ""),
+                metricsMonitoringHostname = jsonObject.optString("metricsMonitoringHostname", ""),
+                metricsBillingHostname = jsonObject.optString("metricsBillingHostname", ""),
                 graylogHostname = jsonObject.getString("graylogHostname"),
                 remoteConfigHostname = jsonObject.getString("remoteConfigHostname"),
                 remoteConfigPeriodSec = jsonObject.getString("remoteConfigPeriodSec"),
@@ -109,7 +111,9 @@ data class WycdnEnvList(
  * @property bootstrapPort Port of the bootstrap node.
  * @property customerNetworkId Customer network ID.
  * @property stunHostname Hostname of the STUN server.
- * @property influxdbHostname Hostname of the InfluxDB Telegraf endpoint.
+ * @property metricsDebugHostname Hostname of the Telegraf endpoint for "debug" metrics.
+ * @property metricsMonitoringHostname Hostname of the Telegraf endpoint for "monitoring" metrics.
+ * @property metricsBillingHostname Hostname of the Telegraf endpoint for "billing" metrics.
  * @property graylogHostname Hostname of the Graylog endpoint.
  * @property remoteConfigHostname Hostname of the remote config server.
  * @property remoteConfigPeriodSec Period of the remote config refresh in seconds (0 to disable).
@@ -121,7 +125,9 @@ data class WycdnEnv(
     val bootstrapPort: String?,
     val customerNetworkId: String?,
     val stunHostname: String,
-    val influxdbHostname: String,
+    val metricsDebugHostname: String,
+    val metricsMonitoringHostname: String,
+    val metricsBillingHostname: String,
     val graylogHostname: String,
     val remoteConfigHostname: String,
     val remoteConfigPeriodSec: String,

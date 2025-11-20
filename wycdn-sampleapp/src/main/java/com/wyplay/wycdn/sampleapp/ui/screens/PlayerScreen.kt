@@ -174,7 +174,7 @@ class PlayerInfoSender(private var wycdnViewModel: WycdnViewModel)
         sslContext.init(null, trustManagers, null)
 
         val factory = sslContext.socketFactory as SSLSocketFactory
-        val socket = factory.createSocket(wycdnViewModel.influxdbHostname, 8094) as SSLSocket
+        val socket = factory.createSocket(wycdnViewModel.metricsDebugHostname, 8094) as SSLSocket
         socket.soTimeout = 5000
         socket.sendBufferSize = 65536
 

@@ -6,7 +6,9 @@
       "name": "Public (poc2)",
       "bootstrapHostname": "node0.poc2.wycdn.wyplay.com",
       "stunHostname": "stun.poc2.wycdn.wyplay.com",
-      "influxdbHostname": "telegraf.poc2.wycdn.wyplay.com",
+      "metricsDebugHostname": "telegraf.poc2.wycdn.wyplay.com",
+      "metricsMonitoringHostname": "telegraf.poc2.wycdn.wyplay.com",
+      "metricsBillingHostname": "telegraf.poc2.wycdn.wyplay.com",
       "graylogHostname": "graylog.poc2.wycdn.wyplay.com",
       "remoteConfigHostname": "node0.poc2.wycdn.wyplay.com",
       "remoteConfigPeriodSec": "30"

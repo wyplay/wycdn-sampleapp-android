@@ -162,6 +162,10 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
         wycdn.setLogLevel(logLevel)
     }
 
+    fun updatePlayerResolutionInfo(width: Int, height: Int) {
+        wycdn.setPlayerResolutionInfo(width, height)
+    }
+
     /**
      * Updates WyCDN debug info by fetching it periodically.
      */

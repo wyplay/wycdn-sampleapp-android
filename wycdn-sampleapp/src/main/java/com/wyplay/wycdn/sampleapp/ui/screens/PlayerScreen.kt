@@ -11,7 +11,6 @@ package com.wyplay.wycdn.sampleapp.ui.screens
 
 import android.util.Log
 import android.view.WindowManager
-import androidx.activity.result.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -26,8 +25,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -55,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
-import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -74,26 +70,13 @@ import com.wyplay.wycdn.sampleapp.ui.components.PlayerComponent
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
-import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfo
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfoState
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.OutputStreamWriter
-import java.security.KeyStore
-import java.util.concurrent.ConcurrentLinkedQueue
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLSocket
-import javax.net.ssl.SSLSocketFactory
-import javax.net.ssl.TrustManagerFactory
 
 /**
  * Media player screen responsible for rendering the ExoPlayer view.
@@ -157,99 +140,19 @@ fun PlayerScreen(
 
 }
 
-class PlayerInfoSender(private var wycdnViewModel: WycdnViewModel)
-{
-    private val metricQueue: ConcurrentLinkedQueue<String> = ConcurrentLinkedQueue()
-
-    init {
-        startQueueProcessor()
-    }
-
-    private fun createTLSSocket(): SSLSocket {
-        val sslContext = SSLContext.getInstance("TLS")
-        val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-        trustManagerFactory.init(null as KeyStore?)
-
-        val trustManagers = trustManagerFactory.trustManagers
-        sslContext.init(null, trustManagers, null)
-
-        val factory = sslContext.socketFactory as SSLSocketFactory
-        val socket = factory.createSocket(wycdnViewModel.metricsDebugHostname, 8094) as SSLSocket
-        socket.soTimeout = 5000
-        socket.sendBufferSize = 65536
-
-        return socket
-    }
-
-    private suspend fun sendMetrics() {
-        try {
-            val socket = createTLSSocket()
-
-            if (!socket.isConnected)
-                return
-
-            val writer = OutputStreamWriter(socket.outputStream)
-
-            while (metricQueue.isNotEmpty()) {
-                val metric = metricQueue.poll() ?: break
-
-                try {
-                    withContext(Dispatchers.IO) {
-                        writer.write(metric)
-                        writer.write(10)
-                        writer.flush()
-                    }
-                    delay(50L)
-                } catch (e: Exception) {
-                    metricQueue.offer(metric);
-                    break
-                }
-            }
-
-            withContext(Dispatchers.IO) {
-                writer.close()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    fun startQueueProcessor() {
-        GlobalScope.launch(Dispatchers.IO) {
-            while (isActive) {
-                sendMetrics()
-                delay(10000L)
-            }
-        }
-    }
-
-    fun enqueueMetrics(playerInfo: PlayerInfo) {
-        if (playerInfo.resolution == "0x0" || playerInfo.state == -1)
-            return
-
-        val metric =
-            "player,peerId=${wycdnViewModel.peerId} resolution=\"${playerInfo.resolution}\",state=${playerInfo.state} ${System.currentTimeMillis() * 1000000}"
-
-        metricQueue.offer(metric)
-    }
-}
-
 data class PlayerInfo(var resolution: String = "0x0", var state: Int = -1)
 
-class PlayerInfoViewModel(private val playerInfoSender: PlayerInfoSender) : ViewModel() {
+class PlayerInfoViewModel : ViewModel() {
     private val _playerInfo = MutableStateFlow(PlayerInfo("0x0", -1))
     val playerInfo: StateFlow<PlayerInfo> = _playerInfo.asStateFlow()
 
     fun updateResolution(resolution: String) {
         _playerInfo.value = _playerInfo.value.copy(resolution = resolution)
-        playerInfoSender.enqueueMetrics(_playerInfo.value)
     }
 
     fun updateState(state: Int) {
         _playerInfo.value.state = state
-        playerInfoSender.enqueueMetrics(_playerInfo.value)
     }
-
 }
 
 @Composable
@@ -311,6 +214,7 @@ private fun PlayerSurface(
             },
             onVideoSizeChanged = { videoSize ->
                 playerInfoViewModel.updateResolution("${videoSize.width}x${videoSize.height}")
+                wycdnViewModel.updatePlayerResolutionInfo(videoSize.width, videoSize.height);
             },
             onPlaybackStateChanged = { state ->
                 playerInfoViewModel.updateState(state)

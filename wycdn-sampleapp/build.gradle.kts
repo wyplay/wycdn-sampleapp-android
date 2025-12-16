@@ -1,7 +1,10 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.gms.google.services)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
@@ -12,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.wyplay.wycdn.sampleapp"
-        minSdk = 21
+        minSdk = 23
         targetSdk = 35
         versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 1
         versionName = project.findProperty("versionName")?.toString() ?: "1.0"
@@ -30,6 +33,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            configure<CrashlyticsExtension> {
+                // Enable processing and uploading of native symbols to Firebase servers.
+                // By default, this is disabled to improve build speeds.
+                // This flag must be enabled to see properly-symbolicated native
+                // stack traces in the Crashlytics dashboard.
+                nativeSymbolUploadEnabled = true
+            }
         }
     }
     compileOptions {
@@ -48,6 +58,16 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    flavorDimensions += "services"
+    productFlavors {
+        create("withFirebaseCrashlytics") {
+            dimension = "services"
+        }
+        create("withoutFirebaseCrashlytics") {
+            dimension = "services"
         }
     }
 }
@@ -82,6 +102,11 @@ dependencies {
     // Coroutine
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Firebase Crashlytics
+    "withFirebaseCrashlyticsImplementation"(platform(libs.firebase.bom))
+    "withFirebaseCrashlyticsImplementation"(libs.firebase.crashlytics.ndk)
+    "withFirebaseCrashlyticsImplementation"(libs.firebase.analytics)
 
     // Testing
     testImplementation(libs.junit)

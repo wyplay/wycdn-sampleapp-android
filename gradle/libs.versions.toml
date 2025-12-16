@@ -6,6 +6,9 @@ coreKtx = "1.13.1"
 datastorePreferences = "1.1.1"
 datastoreCore = "1.1.1"
 espressoCore = "3.6.1"
+firebaseBom = "34.7.0"
+firebasePlugin = "3.0.6"
+gmsPlugin = "4.4.4"
 junit = "1.2.1"
 junitVersion = "4.13.2"
 kotlin = "2.0.20"
@@ -36,6 +39,9 @@ androidx-media3-exoplayer-dash = { module = "androidx.media3:media3-exoplayer-da
 androidx-media3-exoplayer-hls = { module = "androidx.media3:media3-exoplayer-hls", version.ref = "media3" }
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
+firebase-crashlytics-ndk = { module = "com.google.firebase:firebase-crashlytics-ndk" }
 junit = { module = "junit:junit", version.ref = "junitVersion" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core" }
@@ -43,5 +49,7 @@ wycdn-service = { module = "com.wyplay.wycdn:wycdn-service", version.ref = "wycd
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebasePlugin" }
+gms-google-services = { id = "com.google.gms.google-services", version.ref = "gmsPlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

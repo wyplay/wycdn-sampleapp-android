@@ -12,7 +12,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven {
             name = "wyplayRepositoryReleases"
-            url = uri("https://maven.wyplay.com/releases")
+            url = uri(extra.properties["wycdnMavenRepoUrl"] as String? ?: "https://maven.wyplay.com/releases")
             credentials(PasswordCredentials::class)
         }
     }

@@ -19,6 +19,7 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.wyplay.wycdn.WycdnDownloadClient
 import com.wyplay.wycdn.WycdnServiceConnection
 import com.wyplay.wycdn.sampleapp.SampleApp
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,6 +54,10 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
 
     // Property providing the Android application instance.
     private val app: SampleApp = getApplication()
+
+    /** WyCDN download client used to download media manifests/segments */
+    val downloadClient = WycdnDownloadClient(wycdn)
+
     /**
      * Property providing [WycdnDebugInfoState] as a [StateFlow], allowing the UI to observe changes to the debug info state.
      * This flow starts in the Disabled state and updates as the debug info is loaded or if an error occurs.

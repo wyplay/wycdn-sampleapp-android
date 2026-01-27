@@ -64,6 +64,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.datasource.DefaultDataSourceFactory
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.dash.DashMediaSource
+import androidx.media3.exoplayer.dash.DefaultDashChunkSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.wyplay.wycdn.sampleapp.MainActivity
 import com.wyplay.wycdn.sampleapp.R
 import com.wyplay.wycdn.sampleapp.ui.components.PlayerComponent
@@ -71,6 +78,7 @@ import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfoState
+import com.wyplay.wycdn.sampleapp.ui.models.WycdnMediaDataSourceFactory
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -179,6 +187,7 @@ private fun ErrorMessage(e: Exception, modifier: Modifier = Modifier) {
     }
 }
 
+@UnstableApi
 @Composable
 private fun PlayerSurface(
     mediaList: List<MediaItem>,
@@ -205,6 +214,16 @@ private fun PlayerSurface(
     ) {
         var mediaTitle by remember { mutableStateOf(mediaList[mediaIndex].mediaMetadata.title.toString()) }
 
+        val mediaSourceFactory = remember(mediaIndex) {
+            when (mediaList[mediaIndex].mediaMetadata.extras?.getString("format")?.uppercase()) {
+                "V1F" -> {
+                    val wycdnMediaDataSource = WycdnMediaDataSourceFactory(wycdnViewModel.downloadClient)
+                    DefaultMediaSourceFactory(wycdnMediaDataSource)
+                }
+                else -> DefaultMediaSourceFactory(DefaultHttpDataSource.Factory())
+            }
+        }
+
         // Player component
         PlayerComponent(
             mediaList = mediaList,
@@ -218,7 +237,8 @@ private fun PlayerSurface(
             },
             onPlaybackStateChanged = { state ->
                 playerInfoViewModel.updateState(state)
-            }
+            },
+            mediaSourceFactory = mediaSourceFactory
         )
 
         // Title chip and optional Debug info chip

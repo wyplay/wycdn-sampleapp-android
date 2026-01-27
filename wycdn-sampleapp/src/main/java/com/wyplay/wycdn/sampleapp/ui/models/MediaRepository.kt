@@ -10,6 +10,7 @@
 package com.wyplay.wycdn.sampleapp.ui.models
 
 import android.net.Uri
+import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import java.net.URLEncoder
@@ -22,7 +23,10 @@ import java.net.URLEncoder
  * @property mediaBuiltinDataSource The [MediaDataSource] instance used to fetch a media list from assets.
  * @property mediaRemoteDataSource The [MediaDataSource] instance used to fetch a media list from a remote location.
  */
-class MediaRepository(private val mediaBuiltinDataSource: MediaDataSource, private val mediaRemoteDataSource: MediaDataSource) {
+class MediaRepository(
+    private val mediaBuiltinDataSource: MediaDataSource,
+    private val mediaRemoteDataSource: MediaDataSource
+) {
 
     /**
      * Fetches a list of media items from the data source.
@@ -52,6 +56,9 @@ class MediaRepository(private val mediaBuiltinDataSource: MediaDataSource, priva
                 .setMediaMetadata(
                     MediaMetadata.Builder()
                         .setTitle("$mediaTitle ($mediaFormat)")
+                        .setExtras(Bundle().apply {
+                            putString("format", mediaFormat)
+                        })
                         .build()
                 )
                 .build()
@@ -59,31 +66,50 @@ class MediaRepository(private val mediaBuiltinDataSource: MediaDataSource, priva
 
             if (mediaFormat == "CDN") {
                 // Convert to V0
-                run {
-                    val wycdnMediaItem = MediaItem.Builder()
-                        .setMediaId(mediaId)
-                        .setUri(toWycdnUriV0(mediaUri))
-                        .setMediaMetadata(
-                            MediaMetadata.Builder()
-                                .setTitle("$mediaTitle (V0)")
-                                .build()
-                        )
-                        .build()
-                    mediaList.add(wycdnMediaItem)
-                }
+                var wycdnMediaItem = MediaItem.Builder()
+                    .setMediaId(mediaId)
+                    .setUri(toWycdnUriV0(mediaUri))
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle("$mediaTitle (V0)")
+                            .setExtras(Bundle().apply {
+                                putString("format", "V0")
+                            })
+                            .build()
+                    )
+                    .build()
+                mediaList.add(wycdnMediaItem)
+
                 // Convert to V1
-                run {
-                    val wycdnMediaItem = MediaItem.Builder()
-                        .setMediaId(mediaId)
-                        .setUri(toWycdnUriV1(mediaUri, mediaId))
-                        .setMediaMetadata(
-                            MediaMetadata.Builder()
-                                .setTitle("$mediaTitle (V1)")
-                                .build()
-                        )
-                        .build()
-                    mediaList.add(wycdnMediaItem)
-                }
+                // V1 Proxy
+                wycdnMediaItem = MediaItem.Builder()
+                    .setMediaId(mediaId)
+                    .setUri(toWycdnUriV1(mediaUri, mediaId))
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle("$mediaTitle (V1 - Proxy)")
+                            .setExtras(Bundle().apply {
+                                putString("format", "V1P")
+                            })
+                            .build()
+                    )
+                    .build()
+                mediaList.add(wycdnMediaItem)
+
+                // V1 Fetch
+                wycdnMediaItem = MediaItem.Builder()
+                    .setMediaId(mediaId)
+                    .setUri(toWycdnUriV1(mediaUri, mediaId))
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle("$mediaTitle (V1 - Fetch)")
+                            .setExtras(Bundle().apply {
+                                putString("format", "V1F")
+                            })
+                            .build()
+                    )
+                    .build()
+                mediaList.add(wycdnMediaItem)
             }
         }
 
@@ -120,7 +146,6 @@ class MediaRepository(private val mediaBuiltinDataSource: MediaDataSource, priva
             .build()
 
         val originalPath = uri.encodedPath
-        val baseUriString = baseUri.toString()
         val encodedBaseUrl = URLEncoder.encode(baseUri.toString(), "UTF-8")
 
         return Uri.Builder()

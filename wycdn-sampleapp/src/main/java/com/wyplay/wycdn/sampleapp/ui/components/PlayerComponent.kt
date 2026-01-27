@@ -9,7 +9,6 @@
 
 package com.wyplay.wycdn.sampleapp.ui.components
 
-import android.util.EventLog
 import android.util.Log
 import android.view.KeyEvent
 import androidx.annotation.OptIn
@@ -76,7 +75,7 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.util.EventLogger
 import androidx.media3.ui.PlayerView
@@ -94,7 +93,8 @@ fun PlayerComponent(
     modifier: Modifier = Modifier,
     onCurrentMediaMetadataChanged: (MediaMetadata) -> Unit = {},
     onVideoSizeChanged: (VideoSize) -> Unit = {},
-    onPlaybackStateChanged: (Int) -> Unit = {}
+    onPlaybackStateChanged: (Int) -> Unit = {},
+    mediaSourceFactory: MediaSource.Factory
 ) {
     val resolutionViewModel: ResolutionViewModel = viewModel()
     // Get current context
@@ -148,7 +148,7 @@ fun PlayerComponent(
      */
     fun initializePlayer() {
         player = ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(context))
+            .setMediaSourceFactory(mediaSourceFactory)
             .build().apply {
                 // Set the media items to play
                 setMediaItems(mediaList, mediaItemIndex, C.TIME_UNSET)
@@ -402,7 +402,7 @@ fun ShowResolutionMenu() {
                     resolutionViewModel.setFocusOnResolutionMenu(false)
                     resolutionViewModel.setMenuFlagTV(false)
                     true
-                }else{
+                } else {
                     false
                 }
             }

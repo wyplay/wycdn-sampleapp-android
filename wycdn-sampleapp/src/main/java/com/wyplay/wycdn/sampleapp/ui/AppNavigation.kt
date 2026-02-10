@@ -87,6 +87,7 @@ fun AppNavigation() {
         composable(route = NavRoute.MediaChooserScreen.name) {
             MediaChooserScreen(
                 mediaListState = mediaListState, // Media list to display
+                mediaIndex = mediaIndex,
                 onMediaIndexSelected = {
                     // Update the selected media index in the ViewModel and navigate to the Player screen
                     mediaViewModel.setMediaIndex(it)

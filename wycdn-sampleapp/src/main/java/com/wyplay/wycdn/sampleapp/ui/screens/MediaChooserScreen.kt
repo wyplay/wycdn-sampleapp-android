@@ -9,7 +9,6 @@
 
 package com.wyplay.wycdn.sampleapp.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -36,6 +35,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.res.dimensionResource
@@ -60,6 +61,7 @@ import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 @Composable
 fun MediaChooserScreen(
     mediaListState: MediaListState,
+    mediaIndex: Int,
     onMediaIndexSelected: (Int) -> Unit,
     peerId: String,
     currentWycdnEnvName: String,
@@ -67,12 +69,15 @@ fun MediaChooserScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(
-                stringResource(
-                    R.string.title_media_chooser_screen,
-                    peerId,
-                    currentWycdnEnvName
-                )) })
+            TopAppBar(title = {
+                Text(
+                    stringResource(
+                        R.string.title_media_chooser_screen,
+                        peerId,
+                        currentWycdnEnvName
+                    )
+                )
+            })
         },
         modifier = modifier
     ) { innerPadding ->
@@ -91,6 +96,7 @@ fun MediaChooserScreen(
                 // Show media list
                 MediaList(
                     mediaList = mediaListState.mediaList,
+                    mediaIndex = mediaIndex,
                     onMediaIndexSelected = onMediaIndexSelected,
                     Modifier.padding(innerPadding)
                 )
@@ -126,40 +132,44 @@ private fun ErrorMessage(e: Exception, modifier: Modifier = Modifier) {
 @Composable
 private fun MediaList(
     mediaList: List<MediaItem>,
+    mediaIndex: Int,
     onMediaIndexSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val focusRequesters = remember(mediaList.size) {
+        List(mediaList.size) { FocusRequester() }
+    }
+
     var focusedIndex by remember {
         mutableStateOf(-1)
     }
 
-    LaunchedEffect(Unit) {
-        focusedIndex = -1
+    LaunchedEffect(mediaIndex) {
+        focusRequesters.getOrNull(mediaIndex)?.requestFocus()
     }
+
     LazyColumn(
-        modifier
-            .fillMaxSize()
-
-        ) {
+        modifier.fillMaxSize()
+    ) {
         itemsIndexed(mediaList) { index, mediaItem ->
-            Log.d("theindex",index.toString() +" focuesindex: "+focusedIndex.toString())
-
             val backgroundColor = if (index == focusedIndex) MaterialTheme.colorScheme.primary
             else Transparent
 
             val textColor = if (index == focusedIndex) MaterialTheme.colorScheme.onPrimary
             else MaterialTheme.colorScheme.onSurface
 
-            Column (modifier = Modifier
-                .fillMaxWidth()
-                .background(backgroundColor)
-                .onFocusChanged { focusState ->
-                    if (focusState.isFocused) {
-                        focusedIndex = index
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(backgroundColor)
+                    .focusRequester(focusRequesters[index])
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            focusedIndex = index
+                        }
                     }
-                }
-                .focusable()
-            ){
+                    .focusable()
+            ) {
                 Text(
                     text = mediaItem.mediaMetadata.title.toString(),
                     modifier = Modifier
@@ -193,8 +203,9 @@ private fun MediaChooserScreenMediaListPreview() {
             .setMediaId("media_id_$i")
             .setMediaMetadata(
                 MediaMetadata.Builder()
-                .setTitle("Title $i")
-                .build())
+                    .setTitle("Title $i")
+                    .build()
+            )
             .build()
         mediaList.add(mediaItem)
     }
@@ -207,6 +218,7 @@ private fun MediaChooserScreenPreview(
 ) {
     MediaChooserScreen(
         mediaListState = mediaListState,
+        mediaIndex = -1,
         onMediaIndexSelected = { },
         peerId = "generic-123abc",
         currentWycdnEnvName = "Default"

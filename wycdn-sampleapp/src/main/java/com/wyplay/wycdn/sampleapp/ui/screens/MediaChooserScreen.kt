@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +47,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.wyplay.wycdn.sampleapp.R
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
+import kotlinx.coroutines.android.awaitFrame
 
 /**
  * Media chooser screen allowing to select a media item from a list.
@@ -136,6 +138,8 @@ private fun MediaList(
     onMediaIndexSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val listState = rememberLazyListState()
+
     val focusRequesters = remember(mediaList.size) {
         List(mediaList.size) { FocusRequester() }
     }
@@ -145,11 +149,16 @@ private fun MediaList(
     }
 
     LaunchedEffect(mediaIndex) {
-        focusRequesters.getOrNull(mediaIndex)?.requestFocus()
+        if (mediaIndex in mediaList.indices) {
+            listState.scrollToItem(mediaIndex)
+            awaitFrame()
+            focusRequesters[mediaIndex].requestFocus()
+        }
     }
 
     LazyColumn(
-        modifier.fillMaxSize()
+        state = listState,
+        modifier = modifier.fillMaxSize()
     ) {
         itemsIndexed(mediaList) { index, mediaItem ->
             val backgroundColor = if (index == focusedIndex) MaterialTheme.colorScheme.primary

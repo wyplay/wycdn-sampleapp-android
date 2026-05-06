@@ -1,13 +1,13 @@
 <resources>
-    <string name="app_name">WyCDN Sample App</string>
+    <string name="app_name">Frog2Frog Sample App</string>
     <string name="action_start">Start</string>
     <string name="label_peerid">PeerId: %1$s</string>
-    <string name="label_wycdn_environment">WyCDN Environment</string>
-    <string name="label_wycdn_debug_info_enabled">Show WyCDN debug information</string>
+    <string name="label_wycdn_environment">Frog2Frog Environment</string>
+    <string name="label_wycdn_debug_info_enabled">Show Frog2Frog debug information</string>
     <string name="label_download_metrics_enabled">Enable Send Download Metrics\nand Segment Headers</string>
     <string name="msg_fetching_media_list">Fetching media list…</string>
     <string name="msg_error">Error: %1$s</string>
-    <string name="msg_loading_wycdn_debug_info">Loading WyCDN debug info…</string>
+    <string name="msg_loading_wycdn_debug_info">Loading Frog2Frog debug info…</string>
     <string name="title_media_chooser_screen">%1$s on %2$s</string>
     <string name="title_settings_screen">@string/app_name</string>
 </resources>

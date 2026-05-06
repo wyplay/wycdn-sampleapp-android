@@ -517,7 +517,7 @@ fun SettingsMenu(
 
         // WyCDN Mode Dropdown
         DropdownOption(
-            label = "WyCDN Mode",
+            label = "Frog2Frog Mode",
             items = listOf("full", "lite", "cdn"),
             selectedOption = selectedMode,
             onSelect = { selectedMode = it }

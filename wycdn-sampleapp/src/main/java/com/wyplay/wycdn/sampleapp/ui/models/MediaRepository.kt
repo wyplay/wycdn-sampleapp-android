@@ -47,8 +47,12 @@ class MediaRepository(
         for (mediaItem in fetchedMediaList) {
             val mediaId = mediaItem.mediaId
             val mediaUri = mediaItem.localConfiguration!!.uri
-            val mediaTitle = mediaItem.mediaMetadata.title.toString()
             val mediaFormat = mediaItem.mediaMetadata.extras?.getString("format")?.uppercase()
+            val mediaType = mediaItem.mediaMetadata.extras?.getString("type")
+
+            val mediaTitle = mediaItem.mediaMetadata.title.toString().let { title ->
+                if (!mediaType.isNullOrEmpty()) "$title ($mediaType)" else title
+            }
 
             val directMediaItem = MediaItem.Builder()
                 .setMediaId(mediaId)
@@ -58,6 +62,7 @@ class MediaRepository(
                         .setTitle("$mediaTitle ($mediaFormat)")
                         .setExtras(Bundle().apply {
                             putString("format", mediaFormat)
+                            putString("type", mediaType)
                         })
                         .build()
                 )
@@ -74,6 +79,7 @@ class MediaRepository(
                             .setTitle("$mediaTitle (V0)")
                             .setExtras(Bundle().apply {
                                 putString("format", "V0")
+                                putString("type", mediaType)
                             })
                             .build()
                     )
@@ -90,6 +96,7 @@ class MediaRepository(
                             .setTitle("$mediaTitle (V1 - Proxy)")
                             .setExtras(Bundle().apply {
                                 putString("format", "V1P")
+                                putString("type", mediaType)
                             })
                             .build()
                     )
@@ -105,6 +112,7 @@ class MediaRepository(
                             .setTitle("$mediaTitle (V1 - Fetch)")
                             .setExtras(Bundle().apply {
                                 putString("format", "V1F")
+                                putString("type", mediaType)
                             })
                             .build()
                     )

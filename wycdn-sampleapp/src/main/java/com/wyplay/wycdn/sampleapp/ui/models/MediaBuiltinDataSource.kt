@@ -56,6 +56,7 @@ class MediaBuiltinDataSource(private val assets: AssetManager) : MediaDataSource
             val channelId = channelJson.getString("id")
             val channelUri = channelJson.getString("manifest")
             val channelFormat = channelJson.optString("format", "cdn")
+            val channelType = channelJson.optString("type", "")
             val channelName =
                 when (Build.VERSION.SDK_INT) {
                     in 1..24 -> Html.fromHtml(channelJson.getString("name")).toString()
@@ -72,6 +73,7 @@ class MediaBuiltinDataSource(private val assets: AssetManager) : MediaDataSource
                         .setTitle(channelName)
                         .setExtras(Bundle().apply {
                             putString("format", channelFormat)
+                            putString("type", channelType)
                         })
                         .build()
                 )

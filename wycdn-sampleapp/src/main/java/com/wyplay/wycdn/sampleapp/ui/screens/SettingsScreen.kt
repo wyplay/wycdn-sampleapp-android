@@ -54,6 +54,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+
 /**
  * Settings screen allowing to update application settings.
  *
@@ -175,42 +176,33 @@ fun SettingsScreen(
                     }
                 }
             )
-            /*
             if (debugMenuEnabled) {
-                // Send Download metric enabled switch
+                // Download metrics enabled switch
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.label_download_metrics_enabled)
-                    )
+                    Text(text = stringResource(R.string.label_download_metrics_enabled))
                     Spacer(modifier = Modifier.weight(1f))
                     Switch(
                         checked = downloadMetricsEnabled,
-                        onCheckedChange = {
-                            downloadMetricsEnabled = it
-                        }
+                        onCheckedChange = { downloadMetricsEnabled = it }
                     )
                 }
 
-                // WyCDN debug info enabled switch
+                // Debug info enabled switch
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(16.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.label_wycdn_debug_info_enabled)
-                    )
+                    Text(text = stringResource(R.string.label_wycdn_debug_info_enabled))
                     Spacer(modifier = Modifier.weight(1f))
                     Switch(
                         checked = debugInfoEnabled,
-                        onCheckedChange = {
-                            debugInfoEnabled = it
-                        }
+                        onCheckedChange = { debugInfoEnabled = it }
                     )
                 }
-            }*/
+            }
 
             Spacer(modifier = Modifier.weight(1f)) // This pushes the button to the bottom
 

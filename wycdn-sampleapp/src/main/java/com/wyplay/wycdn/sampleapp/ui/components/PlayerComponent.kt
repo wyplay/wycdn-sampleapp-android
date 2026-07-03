@@ -11,30 +11,17 @@ package com.wyplay.wycdn.sampleapp.ui.components
 
 import android.util.Log
 import android.view.KeyEvent
+import android.view.LayoutInflater
 import androidx.annotation.OptIn
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -46,20 +33,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.Gray
-import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -79,6 +58,7 @@ import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.exoplayer.util.EventLogger
 import androidx.media3.ui.PlayerView
+import com.wyplay.wycdn.sampleapp.R
 import com.wyplay.wycdn.sampleapp.ui.data.TrackInfo
 import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
 
@@ -94,7 +74,9 @@ fun PlayerComponent(
     onCurrentMediaMetadataChanged: (MediaMetadata) -> Unit = {},
     onVideoSizeChanged: (VideoSize) -> Unit = {},
     onPlaybackStateChanged: (Int) -> Unit = {},
-    mediaSourceFactory: MediaSource.Factory
+    onMenuKey: () -> Unit = {},
+    mediaSourceFactory: MediaSource.Factory,
+    playerFocusRequester: FocusRequester
 ) {
     val resolutionViewModel: ResolutionViewModel = viewModel()
     // Get current context
@@ -265,60 +247,10 @@ fun PlayerComponent(
     // Embed PlayerView into the Compose UI hierarchy using an AndroidView
     Box(modifier = Modifier.fillMaxSize()) {
 
-        val buttonFocusRequester = remember { FocusRequester() }
-        val playerFocusRequester = remember { FocusRequester() }
-        val showResolutionMenuFlag by resolutionViewModel.menuFlagTV.collectAsState(initial = false)
-        val showResolutionBox by resolutionViewModel.resolutionMenuFocus.collectAsState(initial = false)
-        var boxIsFocused by remember {
-            mutableStateOf(false)
-        }
-
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Center
         ) {
-
-            if (showResolutionBox) {
-
-                Box(
-                    modifier = Modifier
-                        .focusRequester(buttonFocusRequester)
-                        .focusable()
-                        .background(
-                            if (boxIsFocused) Color(0, 0, 255, 100)
-                            else Transparent
-                        )
-                        .onFocusChanged { focusState ->
-                            boxIsFocused = focusState.isFocused
-                        }
-
-                ) {
-
-                    Button(
-                        onClick = {
-                            resolutionViewModel.setMenuFlagTV(!showResolutionMenuFlag)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Transparent),
-                        modifier = Modifier
-                            .padding(1.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Resolution",
-                            tint = White
-                        )
-                    }
-                    if (showResolutionMenuFlag) {
-                        ShowResolutionMenu()
-                    }
-                }
-
-                LaunchedEffect(showResolutionBox) {
-                    if (showResolutionBox) {
-                        buttonFocusRequester.requestFocus()
-                    }
-                }
-            }
 
             AndroidView(
                 modifier = modifier
@@ -333,12 +265,16 @@ fun PlayerComponent(
                         }
                     }
                     .onKeyEvent { keyEvent ->
-                        if (keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                            resolutionViewModel.setFocusOnResolutionMenu(true)
-                            true
-                        } else {
-                            resolutionViewModel.setFocusOnResolutionMenu(false)
-                            playerView.dispatchKeyEvent(keyEvent.nativeKeyEvent)
+                        when (keyEvent.nativeKeyEvent.keyCode) {
+                            KeyEvent.KEYCODE_MENU -> {
+                                if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                                    onMenuKey()
+                                }
+                                true
+                            }
+                            else -> {
+                                playerView.dispatchKeyEvent(keyEvent.nativeKeyEvent)
+                            }
                         }
                     },
                 factory = {
@@ -361,118 +297,6 @@ fun PlayerComponent(
             title = { Text("Playback Error") },
             text = { Text(errorMessage) }
         )
-    }
-}
-
-@Composable
-fun ShowResolutionMenu() {
-    val resolutionViewModel: ResolutionViewModel = viewModel()
-    val formats by resolutionViewModel.formats.collectAsState(initial = mutableSetOf())
-    val selectedResolutionStr by resolutionViewModel.formatStr.collectAsState(initial = null)
-
-    formats.add(Pair(0, 0)) // AUTO
-
-    var selectedResolution by remember {
-        mutableStateOf<Pair<Int, Int>?>(null)
-    }
-
-    val handleResolutionSelect: (Int, Int, String) -> Unit = { height, width, resolutionStr ->
-        selectedResolution = Pair(height, width)
-        resolutionViewModel.setMenuFlagTV(false)
-        resolutionViewModel.setFocusOnResolutionMenu(true)
-        resolutionViewModel.setLoaderFlag(true)
-        resolutionViewModel.setFocusOnResolutionMenu(false)
-        resolutionViewModel.setSelectedResolution(Pair(height, width))
-        resolutionViewModel.addResolutionFormatStr(resolutionStr)
-    }
-    var focusedIndex by remember {
-        mutableStateOf(-1)
-    }
-
-    LaunchedEffect(Unit) {
-        focusedIndex = -1
-    }
-
-    Column(
-        modifier = Modifier
-            .width(200.dp)
-            .background(Color(0, 0, 255, 50))
-            .onKeyEvent { keyEvent ->
-                if (keyEvent.nativeKeyEvent.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
-                    resolutionViewModel.setFocusOnResolutionMenu(false)
-                    resolutionViewModel.setMenuFlagTV(false)
-                    true
-                } else {
-                    false
-                }
-            }
-    ) {
-        LazyColumn(
-            modifier = Modifier
-                .width(120.dp)
-                .align(Alignment.End)
-        ) {
-            items(formats.toList()) { resolution ->
-                val index = formats.indexOf(resolution)
-
-                val backgroundcolor = if (index == focusedIndex) MaterialTheme.colorScheme.primary
-                else Transparent
-
-                val textColor = if (index == focusedIndex) MaterialTheme.colorScheme.onPrimary
-                else Gray
-
-                val resolutionString = if (resolution?.first == 0) {
-                    "Auto"
-                } else {
-                    resolution?.first.toString() + "p "
-                }
-                Column (modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { focusState ->
-                        if (focusState.isFocused) {
-                            focusedIndex = index
-                        }
-                    }
-                    .focusable()
-                ){
-                    Row(modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            handleResolutionSelect(
-                                resolution?.first ?: 0,
-                                resolution?.second ?: 0,
-                                resolutionString
-                            )
-                        }
-                        .padding(vertical = 1.dp)
-                        .background(backgroundcolor)
-                    ) {
-                        Text(
-                            text = resolutionString,
-                            modifier = Modifier
-                                .padding(10.dp)
-                                .width(80.dp),
-                            style = TextStyle(
-                                color = textColor,
-                                fontSize = 12.sp
-                            )
-                        )
-                        if (resolutionString == selectedResolutionStr) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Selected",
-                                tint = White,
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .align(Alignment.CenterVertically)
-                            )
-                        }
-                    }
-                }
-
-
-            }
-        }
     }
 }
 
@@ -516,11 +340,10 @@ fun createPlayerView(player: Player?): PlayerView {
 
     // Create a PlayerView and remember it to retain its state across recompositions
     val playerView = remember {
-        PlayerView(context).apply {
+        (LayoutInflater.from(context).inflate(R.layout.player_view, null) as PlayerView).apply {
             // Set the player for the PlayerView
             this.player = player
         }
-
     }
 
     // Establish a disposable effect to handle player disposal

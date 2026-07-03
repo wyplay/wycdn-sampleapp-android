@@ -13,6 +13,7 @@ import android.util.Log
 import android.view.WindowManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,17 +28,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -46,13 +42,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -73,6 +77,7 @@ import androidx.media3.exoplayer.dash.DefaultDashChunkSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.wyplay.wycdn.sampleapp.MainActivity
 import com.wyplay.wycdn.sampleapp.R
+import com.wyplay.wycdn.sampleapp.ui.components.FocusableSelector
 import com.wyplay.wycdn.sampleapp.ui.components.PlayerComponent
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
@@ -80,11 +85,11 @@ import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfoState
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnMediaDataSourceFactory
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
-import kotlinx.coroutines.CoroutineScope
+import com.wyplay.wycdn.sampleapp.ui.theme.ControlFocused
+import com.wyplay.wycdn.sampleapp.ui.theme.ControlUnfocused
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 /**
  * Media player screen responsible for rendering the ExoPlayer view.
@@ -204,6 +209,17 @@ private fun PlayerSurface(
     val loaderFlag by resolutionViewModel.loaderFlag.collectAsState(initial = false)
     val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState(initial = false)
 
+    // When the debug menu is disabled there is no gear, so focus falls back to the player (keeping
+    // the MENU key working). When the debug menu is enabled the gear owns focus while the menu is
+    // closed; that request lives in DebugInfoChip, co-located with the gear so it runs only after
+    // the icon is attached. Requesting from a LaunchedEffect ensures focus is restored AFTER the
+    // closed menu subtree leaves composition, otherwise Compose resets focus to the root.
+    val playerFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(showSettingsMenu, debugMenuEnabled) {
+        if (!showSettingsMenu && !debugMenuEnabled) {
+            playerFocusRequester.requestFocus()
+        }
+    }
 
     Box(
         modifier = modifier
@@ -238,7 +254,13 @@ private fun PlayerSurface(
             onPlaybackStateChanged = { state ->
                 playerInfoViewModel.updateState(state)
             },
-            mediaSourceFactory = mediaSourceFactory
+            onMenuKey = {
+                if (debugMenuEnabled) {
+                    showSettingsMenu = true
+                }
+            },
+            mediaSourceFactory = mediaSourceFactory,
+            playerFocusRequester = playerFocusRequester
         )
 
         // Title chip and optional Debug info chip
@@ -256,7 +278,9 @@ private fun PlayerSurface(
                 debugInfoState = debugInfoState,
                 modifier = Modifier.align(Alignment.End),
                 playerInfoViewModel = playerInfoViewModel,
-                onSettingsClick = { showSettingsMenu = true }
+                debugMenuEnabled = debugMenuEnabled,
+                settingsMenuOpen = showSettingsMenu,
+                onSettingsClick = { showSettingsMenu = !showSettingsMenu }
             )
         }
 
@@ -266,9 +290,6 @@ private fun PlayerSurface(
                 SettingsMenu(
                     settingsViewModel = settingsViewModel,
                     wycdnViewModel = wycdnViewModel,
-                    playerInfoViewModel = playerInfoViewModel,
-                    snackbarHostState = SnackbarHostState(),
-                    coroutineScope = rememberCoroutineScope(),
                     onDismiss = { showSettingsMenu = false },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -280,6 +301,7 @@ private fun PlayerSurface(
         if (loaderFlag) {
             CircularProgressIndicator(modifier = Modifier.size(50.dp), color = White)
         }
+
     }
 }
 
@@ -325,11 +347,12 @@ fun DebugInfoChip(
     debugInfoState: WycdnDebugInfoState,
     modifier: Modifier = Modifier,
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
+    debugMenuEnabled: Boolean = false,
+    settingsMenuOpen: Boolean = false,
+    gearFocusRequester: FocusRequester = remember { FocusRequester() },
     onSettingsClick: () -> Unit
 ) {
     val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo())
-    val resolutionViewModel: ResolutionViewModel = viewModel()
-    val showResolutionMenuFlag by resolutionViewModel.menuFlagMobile.collectAsState(initial = false)
 
     Row(
         modifier = Modifier
@@ -346,134 +369,30 @@ fun DebugInfoChip(
             style = TextStyle(fontSize = 16.sp)
         )
         Log.d("DebugInfoChip", "Resolution: ${playerInfo.resolution}")
-        Spacer(modifier = Modifier.width(8.dp))
-        Icon(
-            imageVector = Icons.Filled.Settings,
-            contentDescription = "Settings",
-            tint = White,
-            modifier = Modifier
-                .size(24.dp)
-                .clickable { onSettingsClick() }
-        )
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
-@Composable
-fun ShowResolutionMenu(
-    playerInfoViewModel: PlayerInfoViewModel
-) {
-    val resolutionViewModel: ResolutionViewModel = viewModel()
-    val formats by resolutionViewModel.formats.collectAsState(initial = mutableSetOf())
-    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo())
-
-    // Dynamically add resolutions from playerInfo.resolutions
-    playerInfo.resolution?.forEach { resolution ->
-        val parts = resolution.toString().split("x")
-        if (parts.size == 2) {
-            val width = parts[0].toIntOrNull() ?: 0
-            val height = parts[1].toIntOrNull() ?: 0
-            formats.add(Pair(height, width))
-        }
-    }
-
-    // Add "Auto" to formats if not already added
-    formats.add(Pair(0, 0)) // Represents "Auto"
-
-    // Parse playerInfo.resolution (e.g., "640x360")
-    val playerResolutionPair = playerInfo.resolution?.let { resolutionStr ->
-        val parts = resolutionStr.split("x")
-        if (parts.size == 2) {
-            Pair(parts[1].toIntOrNull() ?: 0, parts[0].toIntOrNull() ?: 0)
-        } else {
-            Pair(0, 0) // Default to "Auto" if parsing fails
-        }
-    } ?: Pair(0, 0)
-
-    Log.d("ShowResolutionMenu", "playerInfo.resolution: ${playerInfo.resolution}")
-    Log.d("ShowResolutionMenu", "playerResolutionPair: $playerResolutionPair")
-
-    // Initialize selectedResolution and text
-    var selectedResolution by remember { mutableStateOf(playerResolutionPair) }
-    var selectedResolutionText by remember {
-        mutableStateOf(
-            if (selectedResolution.first == 0) "Auto" else "${selectedResolution.first}p"
-        )
-    }
-
-    // Handle resolution selection from the dropdown
-    val handleResolutionSelect: (Int, Int, String) -> Unit = { height, width, resolutionStr ->
-        selectedResolution = Pair(height, width)
-        selectedResolutionText = resolutionStr
-        resolutionViewModel.setMenuFlagMobile(false)
-        resolutionViewModel.setLoaderFlag(true)
-        resolutionViewModel.setSelectedResolution(Pair(height, width))
-        resolutionViewModel.addResolutionFormatStr(resolutionStr)
-    }
-
-    // Dropdown expanded state
-    var expanded by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        // Label
-        Text(text = "Resolution", color = White)
-
-        // Display selected resolution with dropdown styling
-        Text(
-            text = selectedResolutionText,
-            color = White,
-            style = TextStyle(fontSize = 16.sp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = Color.Gray, shape = RoundedCornerShape(4.dp))
-                .clickable { expanded = !expanded }
-                .padding(8.dp)
-        )
-
-        // Dropdown menu
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            formats.toList().forEach { resolution ->
-                val resolutionHeight = resolution?.first
-                val resolutionString = if (resolutionHeight == 0) {
-                    "Auto"
-                } else {
-                    "${resolutionHeight}p"
+        if (debugMenuEnabled) {
+            // Keep the gear focused whenever the debug menu is closed so the D-pad always has a
+            // target. Co-located with the gear here so the request runs after the icon is attached.
+            LaunchedEffect(settingsMenuOpen) {
+                if (!settingsMenuOpen) {
+                    gearFocusRequester.requestFocus()
                 }
-
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = resolutionString, color = Black)
-                            if (resolutionString == selectedResolutionText) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Selected",
-                                    tint = White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    },
-                    onClick = {
-                        if (resolution != null) {
-                            handleResolutionSelect(
-                                resolution.first,
-                                resolution.second,
-                                resolutionString
-                            )
-                            expanded = false
-                        }
-                    }
-                )
             }
+            var gearFocused by remember { mutableStateOf(false) }
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Settings",
+                tint = White,
+                modifier = Modifier
+                    .size(24.dp)
+                    .focusRequester(gearFocusRequester)
+                    .onFocusChanged { gearFocused = it.isFocused }
+                    .background(
+                        color = if (gearFocused) ControlFocused else ControlUnfocused,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .clickable { onSettingsClick() }
+            )
         }
     }
 }
@@ -482,45 +401,99 @@ fun ShowResolutionMenu(
 fun SettingsMenu(
     modifier: Modifier = Modifier,
     wycdnViewModel: WycdnViewModel,
-    playerInfoViewModel: PlayerInfoViewModel,
     settingsViewModel: SettingsViewModel,
-    snackbarHostState: SnackbarHostState,
-    coroutineScope: CoroutineScope = rememberCoroutineScope(),
     onDismiss: () -> Unit
 ) {
+    val resolutionViewModel: ResolutionViewModel = viewModel()
+
     val wycdnMode by wycdnViewModel.wycdnMode.collectAsState()
     var selectedMode by remember { mutableStateOf(wycdnMode) }
     var selectedLogLevel by remember { mutableStateOf("info") }
+
+    // Resolution options derived from the formats reported by the player.
+    val formats by resolutionViewModel.formats.collectAsState()
+    val selectedResolutionStr by resolutionViewModel.formatStr.collectAsState()
+
+    // Build label -> (height, width) pairs. Height 0 means "Auto".
+    val resolutionOptions: List<Pair<String, Pair<Int, Int>>> = remember(formats) {
+        val opts = mutableListOf<Pair<String, Pair<Int, Int>>>()
+        opts.add("Auto" to Pair(0, 0))
+        formats.filterNotNull()
+            .filter { it.first > 0 }
+            .sortedByDescending { it.first }
+            .forEach { pair -> opts.add("${pair.first}p" to pair) }
+        opts
+    }
+    val resolutionLabels = resolutionOptions.map { it.first }
+    val currentResolutionLabel = selectedResolutionStr.ifEmpty { "Auto" }
 
     // Update UI when wycdnMode changes
     LaunchedEffect(wycdnMode) {
         selectedMode = wycdnMode
     }
 
+    // Grab focus when the menu opens so the D-pad drives it immediately.
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     Column(
         modifier = modifier
+            .focusRequester(focusRequester)
+            .focusGroup() // requestFocus() on this group delegates to the first focusable child
+            .onPreviewKeyEvent { keyEvent ->
+                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.Back) {
+                    onDismiss()
+                    true
+                } else {
+                    false
+                }
+            }
             .background(
                 color = Black.copy(alpha = 0.8f),
                 shape = RoundedCornerShape(8.dp)
             )
             .padding(16.dp)
     ) {
-        ShowResolutionMenu(playerInfoViewModel)
-
-        // Log Level Dropdown
-        DropdownOption(
-            label = "Log Level",
-            items = listOf("off", "error", "info", "warn", "debug"),
-            selectedOption = selectedLogLevel,
-            onSelect = { selectedLogLevel = it }
+        // Resolution selector
+        FocusableSelector(
+            label = "Resolution",
+            items = resolutionLabels,
+            selected = currentResolutionLabel,
+            onSelect = { label ->
+                val option = resolutionOptions.firstOrNull { it.first == label }
+                if (option != null) {
+                    val (height, width) = option.second
+                    resolutionViewModel.setMenuFlagMobile(false)
+                    resolutionViewModel.setLoaderFlag(true)
+                    resolutionViewModel.setSelectedResolution(Pair(height, width))
+                    resolutionViewModel.addResolutionFormatStr(label)
+                }
+            }
         )
 
-        // WyCDN Mode Dropdown
-        DropdownOption(
+        // Log Level selector
+        FocusableSelector(
+            label = "Log Level",
+            items = listOf("off", "error", "info", "warn", "debug"),
+            selected = selectedLogLevel,
+            onSelect = {
+                selectedLogLevel = it
+                wycdnViewModel.updateWycdnLogLevel(it)
+            }
+        )
+
+        // Frog2Frog Mode selector
+        FocusableSelector(
             label = "Frog2Frog Mode",
             items = listOf("full", "lite", "cdn"),
-            selectedOption = selectedMode,
-            onSelect = { selectedMode = it }
+            selected = selectedMode,
+            onSelect = {
+                selectedMode = it
+                wycdnViewModel.updateWycdnMode(it)
+                settingsViewModel.setWycdnMode(it)
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -529,80 +502,16 @@ fun SettingsMenu(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
+            var closeFocused by remember { mutableStateOf(false) }
             Button(
                 onClick = { onDismiss() },
+                modifier = Modifier.onFocusChanged { closeFocused = it.isFocused },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Gray,
+                    containerColor = if (closeFocused) ControlFocused else ControlUnfocused,
                     contentColor = Color.White
                 )
             ) {
-                Text(text = "Cancel")
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Button(
-                onClick = {
-                    wycdnViewModel.updateWycdnMode(selectedMode)
-                    settingsViewModel.setWycdnMode(selectedMode)
-                    wycdnViewModel.updateWycdnLogLevel(selectedLogLevel)
-
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Changes applied",
-                            duration = SnackbarDuration.Short,
-                        )
-                    }
-                    onDismiss()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Gray,
-                    contentColor = Color.White
-                )
-            ) {
-                Text(text = "Apply")
-            }
-        }
-    }
-}
-
-@Composable
-fun DropdownOption(
-    label: String,
-    items: List<String>,
-    selectedOption: String,
-    onSelect: (String) -> Unit // Callback to handle selection
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 4.dp)
-    ) {
-        Text(text = label, color = White)
-        Text(
-            text = selectedOption,
-            color = White,
-            style = TextStyle(fontSize = 16.sp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = Color.Gray, shape = RoundedCornerShape(4.dp))
-                .clickable { expanded = !expanded }
-                .padding(8.dp)
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            items.forEach { item ->
-                DropdownMenuItem(
-                    text = { Text(text = item) },
-                    onClick = {
-                        onSelect(item)  // Call onSelect when an item is clicked
-                        expanded = false
-                    }
-                )
+                Text(text = "Close")
             }
         }
     }

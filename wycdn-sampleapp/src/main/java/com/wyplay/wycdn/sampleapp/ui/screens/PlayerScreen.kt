@@ -216,7 +216,7 @@ private fun PlayerSurface(
 
         val mediaSourceFactory = remember(mediaIndex) {
             when (mediaList[mediaIndex].mediaMetadata.extras?.getString("format")?.uppercase()) {
-                "V1F" -> {
+                "V1F", "V2F" -> {
                     val wycdnMediaDataSource = WycdnMediaDataSourceFactory(wycdnViewModel.downloadClient)
                     DefaultMediaSourceFactory(wycdnMediaDataSource)
                 }

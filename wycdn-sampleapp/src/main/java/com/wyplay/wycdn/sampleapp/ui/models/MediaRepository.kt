@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import org.json.JSONObject
 import java.net.URLEncoder
 
 // See: https://developer.android.com/topic/architecture/data-layer
@@ -102,6 +103,39 @@ class MediaRepository(
                     )
                     .build()
                 mediaList.add(wycdnMediaItem)
+
+                // Convert to V2
+                // V2 Proxy
+                wycdnMediaItem = MediaItem.Builder()
+                    .setMediaId(mediaId)
+                    .setUri(toWycdnUriV2(mediaUri, mediaId))
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle("$mediaTitle (V2 - Proxy)")
+                            .setExtras(Bundle().apply {
+                                putString("format", "V2P")
+                                putString("type", mediaType)
+                            })
+                            .build()
+                    )
+                    .build()
+                mediaList.add(wycdnMediaItem)
+
+                // V2 Fetch
+                wycdnMediaItem = MediaItem.Builder()
+                    .setMediaId(mediaId)
+                    .setUri(toWycdnUriV2(mediaUri, mediaId))
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle("$mediaTitle (V2 - Fetch)")
+                            .setExtras(Bundle().apply {
+                                putString("format", "V2F")
+                                putString("type", mediaType)
+                            })
+                            .build()
+                    )
+                    .build()
+                mediaList.add(wycdnMediaItem)
             }
         }
 
@@ -129,6 +163,37 @@ class MediaRepository(
             .scheme("http")
             .encodedAuthority("127.0.0.1:8000")
             .encodedPath("/wycdn/v1/get/${channelId}/${mode}/${encodedBaseUrl}${originalPath}")
+            .encodedQuery(uri.query)
+            .build()
+    }
+
+    /**
+     * Converts an URI to a WyCDN v2 URI.
+     *
+     * @param uri The original URI.
+     * @return The converted URI.
+     */
+    private fun toWycdnUriV2(uri: Uri, channelId: String, mode: String = "auto"): Uri {
+        val port = if (uri.port > 0) uri.port else if (uri.scheme == "http") 80 else 443
+
+        val baseUri = Uri.Builder()
+            .scheme(uri.scheme)
+            .encodedAuthority("${uri.host}:${port}")
+            .build()
+
+        val extraParams = JSONObject()
+            .put("mode", mode)
+            .toString()
+
+        val originalPath = uri.encodedPath
+        val encodedBaseUrl = URLEncoder.encode(baseUri.toString(), "UTF-8")
+        val encodedChannelId = URLEncoder.encode(channelId, "UTF-8")
+        val encodedExtraParams = URLEncoder.encode(extraParams, "UTF-8")
+
+        return Uri.Builder()
+            .scheme("http")
+            .encodedAuthority("127.0.0.1:8000")
+            .encodedPath("/wycdn/v2/get/${encodedChannelId}/${encodedExtraParams}/${encodedBaseUrl}${originalPath}")
             .encodedQuery(uri.query)
             .build()
     }

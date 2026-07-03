@@ -70,25 +70,9 @@ class MediaRepository(
             mediaList.add(directMediaItem)
 
             if (mediaFormat == "CDN") {
-                // Convert to V0
-                var wycdnMediaItem = MediaItem.Builder()
-                    .setMediaId(mediaId)
-                    .setUri(toWycdnUriV0(mediaUri))
-                    .setMediaMetadata(
-                        MediaMetadata.Builder()
-                            .setTitle("$mediaTitle (V0)")
-                            .setExtras(Bundle().apply {
-                                putString("format", "V0")
-                                putString("type", mediaType)
-                            })
-                            .build()
-                    )
-                    .build()
-                mediaList.add(wycdnMediaItem)
-
                 // Convert to V1
                 // V1 Proxy
-                wycdnMediaItem = MediaItem.Builder()
+                var wycdnMediaItem = MediaItem.Builder()
                     .setMediaId(mediaId)
                     .setUri(toWycdnUriV1(mediaUri, mediaId))
                     .setMediaMetadata(
@@ -122,21 +106,6 @@ class MediaRepository(
         }
 
         return mediaList
-    }
-
-    /**
-     * Converts an URI to a WyCDN v0 URI.
-     *
-     * @param uri The original URI.
-     * @return The converted URI.
-     */
-    private fun toWycdnUriV0(uri: Uri): Uri {
-        return Uri.Builder()
-            .scheme("http")
-            .encodedAuthority("127.0.0.1:8000")
-            .encodedPath("/wycdn/https/${uri.host}${uri.encodedPath}")
-            .encodedQuery(uri.query)
-            .build()
     }
 
     /**

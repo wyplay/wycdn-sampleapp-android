@@ -63,6 +63,29 @@ class MediaViewModel(private val repository: MediaRepository) : ViewModel() {
         _mediaIndex.value = index
     }
 
+    // Backing property for the active channel-list filter, initialized to no filter.
+    private val _filter = MutableStateFlow(MediaFilter.ALL)
+
+    /**
+     * Property providing the active [MediaFilter] as a [StateFlow].
+     *
+     * The filter is applied to the channel list shown by the media chooser and, transitively, to
+     * the playlist handed to the player, so channel zapping stays within the active filter.
+     * Note: [mediaIndexState] is an index into the *filtered* list for the current filter.
+     */
+    val filterState: StateFlow<MediaFilter> = _filter.asStateFlow()
+
+    /**
+     * Sets the active channel-list [filter].
+     *
+     * [mediaIndexState] is intentionally left untouched: it is only meaningful once the user picks
+     * a channel from the filtered list (which sets a fresh, valid index), and resetting it here
+     * would move focus into the list when the user merely switches tabs.
+     */
+    fun setFilter(filter: MediaFilter) {
+        _filter.value = filter
+    }
+
     init {
         // Trigger the initial loading of the media list
         initMediaList()

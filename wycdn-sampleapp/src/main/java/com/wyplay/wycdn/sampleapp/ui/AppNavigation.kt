@@ -19,8 +19,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.MediaViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
+import com.wyplay.wycdn.sampleapp.ui.models.filterBy
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
 import com.wyplay.wycdn.sampleapp.ui.screens.MediaChooserScreen
 import com.wyplay.wycdn.sampleapp.ui.screens.PlayerInfoViewModel
@@ -47,6 +49,15 @@ fun AppNavigation() {
     val mediaListState by mediaViewModel.mediaListState.collectAsState()
     // Collect and observe the current index of the selected media item
     val mediaIndex by mediaViewModel.mediaIndexState.collectAsState()
+    // Collect and observe the active channel-list filter
+    val mediaFilter by mediaViewModel.filterState.collectAsState()
+
+    // Media list restricted to the active filter. The player receives this filtered list so that
+    // channel zapping stays within the current filter; mediaIndex is an index into it.
+    val filteredMediaListState = when (val state = mediaListState) {
+        is MediaListState.Ready -> MediaListState.Ready(state.mediaList.filterBy(mediaFilter))
+        else -> state
+    }
 
     // Initialize the SettingsViewModel using a custom factory to inject dependencies
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
@@ -86,8 +97,10 @@ fun AppNavigation() {
         // Navigation route for the MediaChooserScreen
         composable(route = NavRoute.MediaChooserScreen.name) {
             MediaChooserScreen(
-                mediaListState = mediaListState, // Media list to display
+                mediaListState = mediaListState, // Full media list, used to build the filter tabs
                 mediaIndex = mediaIndex,
+                mediaFilter = mediaFilter,
+                onMediaFilterSelected = { mediaViewModel.setFilter(it) },
                 onMediaIndexSelected = {
                     // Update the selected media index in the ViewModel and navigate to the Player screen
                     mediaViewModel.setMediaIndex(it)
@@ -100,8 +113,8 @@ fun AppNavigation() {
         // Navigation route for the PlayerScreen
         composable(route = NavRoute.PlayerScreen.name) {
             PlayerScreen(
-                mediaListState = mediaListState, // Media list for zapping
-                mediaIndex = mediaIndex, // Media to play
+                mediaListState = filteredMediaListState, // Filtered media list for zapping
+                mediaIndex = mediaIndex, // Media to play (index into the filtered list)
                 debugInfoState = wycdnDebugInfoState, // Debug info to display
                 playerInfoViewModel = playerInfoViewModel,
                 settingsViewModel = settingsViewModel,

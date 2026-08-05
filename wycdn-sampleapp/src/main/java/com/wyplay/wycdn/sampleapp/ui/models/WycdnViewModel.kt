@@ -64,8 +64,6 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
      */
     val debugInfoState: StateFlow<WycdnDebugInfoState> = _debugInfoState.asStateFlow()
 
-    var metricsDebugHostname: String = ""
-
     /** Identifier to use for our peer. */
     val peerId: String by lazy {
         val app: SampleApp = getApplication()
@@ -103,48 +101,25 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
 
             // Collect settings values
             val wycdnEnv = app.settingsRepository.wycdnEnvironment.value
+            val wycdnConfig = app.settingsRepository.wycdnEnvironmentList.config
             val wycdnDownloadMetricsEnabled = app.settingsRepository.wycdnDownloadMetricsEnabled.value
 
             // Stop the service
             wycdn.unbindService()
 
-            // 1. Set configuration from a file
-            wycdn.setConfigFromAssets("wycdn_config.json")
-
-            // 2. Set configuration properties based on the environment
+            // Set common configuration
             wycdn.setConfigProperty("wycdn.agent.peer_id", peerId)
-            wycdn.setConfigProperty("wycdn.agent.stun", wycdnEnv.stunHostname)
-            
-            // Handle bootstrap configuration
-            // for wycdn agent versions < 0.7.18 we use "wycdn.agent.peer.bootstrap"
-            wycdn.setConfigProperty("wycdn.peer.bootstrap", wycdnEnv.bootstrapHostname)
-            wycdn.setConfigProperty("wycdn.peer.bootstrap.host", wycdnEnv.bootstrapHostname)
+            wycdn.setConfigProperties(wycdnConfig)
 
-            // set port if available
-            if (wycdnEnv.bootstrapPort != null)
-                wycdn.setConfigProperty("wycdn.peer.bootstrap.port", wycdnEnv.bootstrapPort)
-
-            // Set customer network ID if available
-            if (wycdnEnv.customerNetworkId != null)
-                wycdn.setConfigProperty("wycdn.peer.customer_network_id", wycdnEnv.customerNetworkId)
-
-            wycdn.setConfigProperty("wycdn.metrics.debug.host", wycdnEnv.metricsDebugHostname)
-            wycdn.setConfigProperty("wycdn.metrics.monitoring.host", wycdnEnv.metricsMonitoringHostname)
-            wycdn.setConfigProperty("wycdn.metrics.billing.host", wycdnEnv.metricsBillingHostname)
-            wycdn.setConfigProperty("wycdn.graylog.host", wycdnEnv.graylogHostname)
-            wycdn.setConfigProperty("wycdn.config.remote.server", wycdnEnv.remoteConfigHostname)
-            wycdn.setConfigProperty("wycdn.config.remote.refresh_period_sec", wycdnEnv.remoteConfigPeriodSec)
-
-            metricsDebugHostname = wycdnEnv.metricsDebugHostname
+            // Set environment configuration
+            wycdn.setConfigProperties(wycdnEnv.config)
 
             // Set the download metrics enabled property
             wycdn.setConfigProperty(
                 "wycdn.metrics.debug.send_download_metrics",
-                if (wycdnDownloadMetricsEnabled) "1" else "0"
+                if (wycdnDownloadMetricsEnabled) 1 else 0
             )
 
-            // Allow calling REST routes for debugging
-            wycdn.setConfigProperty("wycdn.proxy.server_address", "0.0.0.0")
             // Start the service
             wycdn.bindService()
         }

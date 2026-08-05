@@ -44,7 +44,7 @@ class WycdnEnvDataSource(private val assets: AssetManager) {
      */
     private fun buildEnvList(): WycdnEnvList {
         // Fetch the JSON
-        val fileName = "environments.json"
+        val fileName = "config.json"
         val envJson = JSONObject(fetch(fileName))
 
         // Build the list of environments
@@ -55,16 +55,7 @@ class WycdnEnvDataSource(private val assets: AssetManager) {
             val config = WycdnEnv(
                 id = jsonObject.getString("id"),
                 name = jsonObject.getString("name"),
-                bootstrapHostname = jsonObject.getString("bootstrapHostname"),
-                bootstrapPort = if (jsonObject.has("bootstrapPort")) jsonObject.getString("bootstrapPort") else null,
-                customerNetworkId = if (jsonObject.has("customerNetworkId")) jsonObject.getString("customerNetworkId") else null,
-                stunHostname = jsonObject.getString("stunHostname"),
-                metricsDebugHostname = jsonObject.optString("metricsDebugHostname", ""),
-                metricsMonitoringHostname = jsonObject.optString("metricsMonitoringHostname", ""),
-                metricsBillingHostname = jsonObject.optString("metricsBillingHostname", ""),
-                graylogHostname = jsonObject.getString("graylogHostname"),
-                remoteConfigHostname = jsonObject.getString("remoteConfigHostname"),
-                remoteConfigPeriodSec = jsonObject.getString("remoteConfigPeriodSec"),
+                config = jsonObject.getJSONObject("config")
             )
             envConfigList.add(config)
         }
@@ -74,7 +65,9 @@ class WycdnEnvDataSource(private val assets: AssetManager) {
         val defaultEnv = envConfigList.firstOrNull { it.id == defaultEnvId }
             ?: throw NoSuchElementException("Default environment with id \"$defaultEnvId\" not found")
 
-        return WycdnEnvList(envConfigList, defaultEnv)
+        val config = envJson.getJSONObject("config")
+
+        return WycdnEnvList(envConfigList, defaultEnv, config)
     }
 
     /**
@@ -96,10 +89,12 @@ class WycdnEnvDataSource(private val assets: AssetManager) {
  *
  * @property envList The list of environment configurations.
  * @property defaultEnv The default environment configuration.
+ * @property config Common WyCDN properties.
  */
 data class WycdnEnvList(
     val envList: List<WycdnEnv>,
-    val defaultEnv: WycdnEnv
+    val defaultEnv: WycdnEnv,
+    val config: JSONObject
 )
 
 /**
@@ -107,30 +102,12 @@ data class WycdnEnvList(
  *
  * @property id Identifier of the environment.
  * @property name Descriptive name of the environment.
- * @property bootstrapHostname Hostname of the bootstrap node.
- * @property bootstrapPort Port of the bootstrap node.
- * @property customerNetworkId Customer network ID.
- * @property stunHostname Hostname of the STUN server.
- * @property metricsDebugHostname Hostname of the Telegraf endpoint for "debug" metrics.
- * @property metricsMonitoringHostname Hostname of the Telegraf endpoint for "monitoring" metrics.
- * @property metricsBillingHostname Hostname of the Telegraf endpoint for "billing" metrics.
- * @property graylogHostname Hostname of the Graylog endpoint.
- * @property remoteConfigHostname Hostname of the remote config server.
- * @property remoteConfigPeriodSec Period of the remote config refresh in seconds (0 to disable).
+ * @property config WyCDN properties for the environment.
  */
 data class WycdnEnv(
     val id: String,
     val name: String,
-    val bootstrapHostname: String,
-    val bootstrapPort: String?,
-    val customerNetworkId: String?,
-    val stunHostname: String,
-    val metricsDebugHostname: String,
-    val metricsMonitoringHostname: String,
-    val metricsBillingHostname: String,
-    val graylogHostname: String,
-    val remoteConfigHostname: String,
-    val remoteConfigPeriodSec: String,
+    val config: JSONObject
 )
 
 /**

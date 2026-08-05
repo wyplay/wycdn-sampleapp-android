@@ -1,0 +1,49 @@
+{
+  "default": "prod",
+  "environments": [
+    {
+      "id": "prod",
+      "name": "Public (prod) Wyplay2",
+      "config": {
+        "wycdn.peer.customer_network_id": "bcc8096e-76a9-48a2-af89-3d049d12456c",
+        "wycdn.peer.bootstraps": [
+          {
+            "host": "node0-wyplay2.prod.frog2frog.org",
+            "port": 443
+          }
+        ],
+        "wycdn.agent.stuns": [
+          {
+            "host": "stun-a.prod.frog2frog.org"
+          },
+          {
+            "host": "stun-b.prod.frog2frog.org"
+          }
+        ],
+        "wycdn.config.remote.server": "config.prod.frog2frog.org",
+        "wycdn.config.remote.path": "/api/v1/config",
+        "wycdn.config.remote.refresh_period_sec": 300,
+        "wycdn.graylog.host": "",
+        "wycdn.metrics.debug.host": "",
+        "wycdn.metrics.delivery.host": "",
+        "wycdn.metrics.monitoring.host": "",
+        "wycdn.metrics.wyplay.host": "metrics.prod.frog2frog.org",
+        "wycdn.metrics.wyplay.path": "/api/v1/write",
+        "wycdn.metrics.wyplay.port": 443
+      }
+    }
+  ],
+  "config": {
+    "wycdn.config.remote.path": "/wycdn/config",
+    "wycdn.config.remote.refresh_period_sec": 30,
+    "wycdn.metrics.debug.path": "/metrics",
+    "wycdn.metrics.debug.port": 8194,
+    "wycdn.metrics.delivery.path": "/metrics",
+    "wycdn.metrics.delivery.port": 8295,
+    "wycdn.metrics.monitoring.path": "/metrics",
+    "wycdn.metrics.monitoring.port": 8295,
+    "wycdn.metrics.wyplay.path": "/metrics",
+    "wycdn.metrics.wyplay.port": 8295
+  }
+}
+

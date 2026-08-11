@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.wyplay.wycdn.sampleapp"
-        minSdk = 23
+        minSdk = 28
         targetSdk = 36
         versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 1
         versionName = project.findProperty("versionName")?.toString() ?: "1.0"

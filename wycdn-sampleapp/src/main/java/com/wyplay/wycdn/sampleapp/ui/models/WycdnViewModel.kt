@@ -80,7 +80,7 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
 
             // Collect settings values
             val wycdnEnv = app.settingsRepository.wycdnEnvironment.value
-            val wycdnConfig = app.settingsRepository.wycdnEnvironmentList.config
+            val wycdnConfig = app.settingsRepository.appConfig.wycdnConfig
             val wycdnDownloadMetricsEnabled = app.settingsRepository.wycdnDownloadMetricsEnabled.value
 
             // Stop the service

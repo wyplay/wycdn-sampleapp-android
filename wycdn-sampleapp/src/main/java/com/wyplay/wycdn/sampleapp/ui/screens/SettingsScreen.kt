@@ -12,6 +12,7 @@ package com.wyplay.wycdn.sampleapp.ui.screens
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,6 +28,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -34,8 +38,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,13 +53,7 @@ import com.wyplay.wycdn.sampleapp.BuildConfig
 import com.wyplay.wycdn.sampleapp.R
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
-import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.launch
-import  androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 
 /**
  * Settings screen allowing to update application settings.
@@ -74,7 +74,7 @@ fun SettingsScreen(
 ) {
     // Collect the current environment as state for composable to react to changes
     val currentEnv by settingsViewModel.wycdnEnvironment.collectAsState(
-        initial = settingsViewModel.wycdnEnvironmentList.defaultEnv
+        initial = settingsViewModel.appConfig.defaultEnvironment
     )
 
     // Local state to store the selected environment, initialized with currentEnv
@@ -154,11 +154,11 @@ fun SettingsScreen(
             // Environment selector
             DropdownSettingSelector(
                 label = stringResource(R.string.label_wycdn_environment),
-                items = settingsViewModel.wycdnEnvironmentList.envList.map { it.name },
+                items = settingsViewModel.appConfig.environments.map { it.name },
                 selectedValue = selectedEnv.name,
                 onValueChange = { value ->
                     // Find the WycdnEnv value corresponding to the selected label and store it
-                    settingsViewModel.wycdnEnvironmentList.envList.firstOrNull { it.name == value }?.let { env ->
+                    settingsViewModel.appConfig.environments.firstOrNull { it.name == value }?.let { env ->
                         selectedEnv = env
                     }
                 }

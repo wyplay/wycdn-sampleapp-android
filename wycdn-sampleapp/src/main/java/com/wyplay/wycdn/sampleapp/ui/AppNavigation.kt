@@ -63,7 +63,7 @@ fun AppNavigation() {
     val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory)
     // Collect and observe the current WyCDN environment setting
     val currentWycdnEnv = settingsViewModel.wycdnEnvironment.collectAsState(
-        initial = settingsViewModel.wycdnEnvironmentList.defaultEnv
+        initial = settingsViewModel.appConfig.defaultEnvironment
     )
 
     // Initialize the WycdnViewModel using a custom factory to inject dependencies

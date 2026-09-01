@@ -18,15 +18,13 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.SupervisorJob
 
 // See: https://developer.android.com/topic/libraries/architecture/datastore
 
@@ -46,16 +44,16 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
  */
 class SettingsRepository(
     private val dataStore: DataStore<Preferences>,
-    private val wycdnEnvDataSource: WycdnEnvDataSource
+    private val appConfigDataSource: AppConfigDataSource
 ) {
 
-    /** WyCDN environment list. */
-    val wycdnEnvironmentList: WycdnEnvList by lazy {
-        wycdnEnvDataSource.getEnvList()
+    /** Application configuration loaded from assets. */
+    val appConfig: AppConfig by lazy {
+        appConfigDataSource.getAppConfig()
     }
 
     // Backing property for the WyCDN environment setting, initially set to the default env.
-    private val _wycdnEnvironment = MutableStateFlow(wycdnEnvironmentList.defaultEnv)
+    private val _wycdnEnvironment = MutableStateFlow(appConfig.defaultEnvironment)
 
     /**
      * A [Flow] of [WycdnEnv] representing the current WyCDN environment setting. This flow emits
@@ -175,8 +173,8 @@ class SettingsRepository(
             
             // Load other preferences...
             preferences[WYCDN_ENVIRONMENT_KEY]?.let { envId ->
-                _wycdnEnvironment.value = wycdnEnvironmentList.envList.firstOrNull { it.id == envId }
-                    ?: wycdnEnvironmentList.defaultEnv
+                _wycdnEnvironment.value = appConfig.environments.firstOrNull { it.id == envId }
+                    ?: appConfig.defaultEnvironment
             }
             preferences[WYCDN_DOWNLOAD_METRICS_ENABLED]?.let { enabled ->
                 _wycdnDownloadMetricsEnabled.value = enabled

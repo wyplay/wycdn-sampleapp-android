@@ -46,7 +46,13 @@
     "wycdn.metrics.wyplay.port": 8295
   },
   "appConfig": {
+    "includeChannelsFetch": true,
+    "includeChannelsProxy": true,
+    "includeChannelsCdn": true,
+    "includeChannelsV1": true,
+    "includeChannelsV2": true,
     "showsDebugMenu": false,
+    "showsChannelsType": true,
     "showsStreamResolution": true
   }
 }

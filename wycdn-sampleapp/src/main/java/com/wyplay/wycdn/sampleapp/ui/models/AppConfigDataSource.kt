@@ -85,7 +85,13 @@ class AppConfigDataSource(private val assets: AssetManager) {
      **/
     private fun buildAppSettings(configJson: JSONObject): AppSettings {
         return AppSettings(
+            includeChannelsFetch = configJson.optBoolean(KEY_INCLUDE_CHANNELS_FETCH, true),
+            includeChannelsProxy = configJson.optBoolean(KEY_INCLUDE_CHANNELS_PROXY, true),
+            includeChannelsCdn = configJson.optBoolean(KEY_INCLUDE_CHANNELS_CDN, true),
+            includeChannelsV1 = configJson.optBoolean(KEY_INCLUDE_CHANNELS_V1, true),
+            includeChannelsV2 = configJson.optBoolean(KEY_INCLUDE_CHANNELS_V2, true),
             showsDebugMenu = configJson.optBoolean(KEY_SHOWS_DEBUG_MENU, false),
+            showsChannelsType = configJson.optBoolean(KEY_SHOWS_CHANNELS_TYPE, true),
             showsStreamResolution = configJson.optBoolean(KEY_SHOWS_STREAM_RESOLUTION, true)
         )
     }
@@ -108,7 +114,13 @@ class AppConfigDataSource(private val assets: AssetManager) {
         const val KEY_ENV_LIST = "environments"
         const val KEY_APP_CONFIG = "appConfig"
         const val KEY_WYCDN_CONFIG = "config"
+        const val KEY_INCLUDE_CHANNELS_CDN = "includeChannelsCdn"
+        const val KEY_INCLUDE_CHANNELS_V1 = "includeChannelsV1"
+        const val KEY_INCLUDE_CHANNELS_V2 = "includeChannelsV2"
+        const val KEY_INCLUDE_CHANNELS_FETCH = "includeChannelsFetch"
+        const val KEY_INCLUDE_CHANNELS_PROXY = "includeChannelsProxy"
         const val KEY_SHOWS_DEBUG_MENU = "showsDebugMenu"
+        const val KEY_SHOWS_CHANNELS_TYPE = "showsChannelsType"
         const val KEY_SHOWS_STREAM_RESOLUTION = "showsStreamResolution"
     }
 }
@@ -131,11 +143,23 @@ data class AppConfig(
 /**
  * Application settings loaded from the `appConfig` JSON section.
  *
+ * @property includeChannelsFetch Whether WyCDN Fetch channels are included.
+ * @property includeChannelsProxy Whether WyCDN Proxy channels are included.
+ * @property includeChannelsCdn Whether CDN channels are included.
+ * @property includeChannelsV1 Whether WyCDN V1 channels are included.
+ * @property includeChannelsV2 Whether WyCDN V2 channels are included.
  * @property showsDebugMenu Whether the debug menu is shown.
+ * @property showsChannelsType Whether the channel type (CDN/V1/etc) is shown in channel titles.
  * @property showsStreamResolution Whether the current stream resolution is shown.
  */
 data class AppSettings(
+    val includeChannelsFetch: Boolean,
+    val includeChannelsProxy: Boolean,
+    val includeChannelsCdn: Boolean,
+    val includeChannelsV1: Boolean,
+    val includeChannelsV2: Boolean,
     val showsDebugMenu: Boolean,
+    val showsChannelsType: Boolean,
     val showsStreamResolution: Boolean
 )
 

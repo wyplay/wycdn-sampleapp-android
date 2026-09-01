@@ -37,6 +37,10 @@ class SampleApp : Application() {
      */
     val mediaRepository by lazy {
         val remoteMediaListUrl = null // Update to fetch media list from a remote data source
-        MediaRepository(MediaBuiltinDataSource(this.assets), MediaRemoteDataSource(remoteMediaListUrl))
+        MediaRepository(
+            MediaBuiltinDataSource(this.assets),
+            MediaRemoteDataSource(remoteMediaListUrl),
+            settingsRepository.appConfig.settings
+        )
     }
 }

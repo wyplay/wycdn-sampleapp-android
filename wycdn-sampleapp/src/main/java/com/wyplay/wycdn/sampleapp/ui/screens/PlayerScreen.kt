@@ -34,6 +34,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -197,6 +198,7 @@ private fun PlayerSurface(
     val resolutionViewModel: ResolutionViewModel = viewModel() // Ensure proper constructor usage
     val loaderFlag by resolutionViewModel.loaderFlag.collectAsState(initial = false)
     val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState()
+    val showsStreamResolution by settingsViewModel.showsStreamResolution.collectAsState()
 
     // When the debug menu is disabled there is no gear, so focus falls back to the player (keeping
     // the MENU key working). When the debug menu is enabled the gear owns focus while the menu is
@@ -261,12 +263,15 @@ private fun PlayerSurface(
             horizontalAlignment = Alignment.End
         ) {
             TitleChip(title = mediaTitle)
-            DebugInfoChip(
-                playerInfoViewModel = playerInfoViewModel,
-                debugMenuEnabled = debugMenuEnabled,
-                settingsMenuOpen = showSettingsMenu,
-                onSettingsClick = { showSettingsMenu = !showSettingsMenu }
-            )
+            if (debugMenuEnabled || showsStreamResolution) {
+                DebugInfoChip(
+                    playerInfoViewModel = playerInfoViewModel,
+                    debugMenuEnabled = debugMenuEnabled,
+                    showsStreamResolution = showsStreamResolution,
+                    settingsMenuOpen = showSettingsMenu,
+                    onSettingsClick = { showSettingsMenu = !showSettingsMenu }
+                )
+            }
         }
 
         if (debugMenuEnabled) {
@@ -331,6 +336,7 @@ fun TitleChipPreview() {
 fun DebugInfoChip(
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
     debugMenuEnabled: Boolean = false,
+    showsStreamResolution: Boolean = true,
     settingsMenuOpen: Boolean = false,
     gearFocusRequester: FocusRequester = remember { FocusRequester() },
     onSettingsClick: () -> Unit
@@ -346,12 +352,14 @@ fun DebugInfoChip(
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = "Resolution: ${playerInfo.resolution}",
-            color = White,
-            style = TextStyle(fontSize = 16.sp)
-        )
-        Log.d("DebugInfoChip", "Resolution: ${playerInfo.resolution}")
+        if (showsStreamResolution) {
+            Text(
+                text = "Resolution: ${playerInfo.resolution}",
+                color = White,
+                style = TextStyle(fontSize = 16.sp)
+            )
+            Log.d("DebugInfoChip", "Resolution: ${playerInfo.resolution}")
+        }
         if (debugMenuEnabled) {
             // Keep the gear focused whenever the debug menu is closed so the D-pad always has a
             // target. Co-located with the gear here so the request runs after the icon is attached.
@@ -361,7 +369,9 @@ fun DebugInfoChip(
                 }
             }
             var gearFocused by remember { mutableStateOf(false) }
-            Spacer(modifier = Modifier.width(8.dp))
+            if (showsStreamResolution) {
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Icon(
                 imageVector = Icons.Filled.Settings,
                 contentDescription = "Settings",
@@ -388,6 +398,7 @@ fun SettingsMenu(
     onDismiss: () -> Unit
 ) {
     val resolutionViewModel: ResolutionViewModel = viewModel()
+    val showsStreamResolution by settingsViewModel.showsStreamResolution.collectAsState()
 
     val wycdnMode by wycdnViewModel.wycdnMode.collectAsState()
     var selectedMode by remember { mutableStateOf(wycdnMode) }
@@ -439,6 +450,33 @@ fun SettingsMenu(
             )
             .padding(16.dp)
     ) {
+        // Show stream resolution switch
+        var streamResolutionFocused by remember { mutableStateOf(false) }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { streamResolutionFocused = it.isFocused }
+                .clickable {
+                    settingsViewModel.setShowsStreamResolution(!showsStreamResolution)
+                }
+                .background(
+                    color = if (streamResolutionFocused) ControlFocused else ControlUnfocused,
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .padding(dimensionResource(R.dimen.padding_small))
+        ) {
+            Text(
+                text = stringResource(R.string.label_show_stream_resolution),
+                color = White
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Switch(
+                checked = showsStreamResolution,
+                onCheckedChange = null
+            )
+        }
+
         // Resolution selector
         FocusableSelector(
             label = "Resolution",

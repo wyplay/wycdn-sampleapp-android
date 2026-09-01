@@ -64,6 +64,22 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         }
     }
 
+    /**
+     * Gets the current value of whether the current stream resolution is shown.
+     */
+    val showsStreamResolution: StateFlow<Boolean> = repository.showsStreamResolution
+
+    /**
+     * Sets the value of whether the current stream resolution is shown.
+     *
+     * @param show The new Boolean value to set.
+     */
+    fun setShowsStreamResolution(show: Boolean) {
+        viewModelScope.launch {
+            repository.setShowsStreamResolution(show)
+        }
+    }
+
     /** Expose Debug Menu state as a StateFlow */
     val debugMenuEnabled: StateFlow<Boolean> = repository.wycdnDebugMenuEnabled
 

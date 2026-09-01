@@ -4,6 +4,7 @@
     <string name="label_peerid">PeerId: %1$s</string>
     <string name="label_wycdn_environment">Frog2Frog Environment</string>
     <string name="label_download_metrics_enabled">Enable Send Download Metrics\nand Segment Headers</string>
+    <string name="label_show_stream_resolution">Show stream resolution</string>
     <string name="msg_fetching_media_list">Fetching media list…</string>
     <string name="msg_error">Error: %1$s</string>
     <string name="title_media_chooser_screen">%1$s on %2$s</string>

@@ -85,7 +85,8 @@ class AppConfigDataSource(private val assets: AssetManager) {
      **/
     private fun buildAppSettings(configJson: JSONObject): AppSettings {
         return AppSettings(
-            showsDebugMenu = configJson.optBoolean(KEY_SHOWS_DEBUG_MENU, false)
+            showsDebugMenu = configJson.optBoolean(KEY_SHOWS_DEBUG_MENU, false),
+            showsStreamResolution = configJson.optBoolean(KEY_SHOWS_STREAM_RESOLUTION, true)
         )
     }
 
@@ -108,6 +109,7 @@ class AppConfigDataSource(private val assets: AssetManager) {
         const val KEY_APP_CONFIG = "appConfig"
         const val KEY_WYCDN_CONFIG = "config"
         const val KEY_SHOWS_DEBUG_MENU = "showsDebugMenu"
+        const val KEY_SHOWS_STREAM_RESOLUTION = "showsStreamResolution"
     }
 }
 
@@ -130,9 +132,11 @@ data class AppConfig(
  * Application settings loaded from the `appConfig` JSON section.
  *
  * @property showsDebugMenu Whether the debug menu is shown.
+ * @property showsStreamResolution Whether the current stream resolution is shown.
  */
 data class AppSettings(
-    val showsDebugMenu: Boolean
+    val showsDebugMenu: Boolean,
+    val showsStreamResolution: Boolean
 )
 
 /**

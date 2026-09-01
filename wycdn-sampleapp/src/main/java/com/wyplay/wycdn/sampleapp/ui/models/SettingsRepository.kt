@@ -98,6 +98,27 @@ class SettingsRepository(
         }
     }
 
+    // Backing property for showing the stream resolution, initially set from AppConfig.
+    private val _showsStreamResolution =
+        MutableStateFlow(appConfig.settings.showsStreamResolution)
+
+    /**
+     * A [Flow] of Boolean representing whether the current stream resolution is shown.
+     * This flow emits the current value stored in the settings, allowing observers to react to changes.
+     *
+     * If the value does not exist, true is emitted as a fallback.
+     */
+    val showsStreamResolution: StateFlow<Boolean> = _showsStreamResolution.asStateFlow()
+
+    /**
+     * Updates the value of whether the current stream resolution is shown.
+     *
+     * @param show The Boolean value to be stored as the new setting.
+     */
+    fun setShowsStreamResolution(show: Boolean) {
+        _showsStreamResolution.value = show
+    }
+
     // Backing property for the WyCDN debug menu enabled setting, initially set from AppConfig.
     private val _wycdnDebugMenuEnabled = MutableStateFlow(appConfig.settings.showsDebugMenu)
 

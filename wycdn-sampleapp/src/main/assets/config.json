@@ -46,6 +46,7 @@
     "wycdn.metrics.wyplay.port": 8295
   },
   "appConfig": {
-    "showsDebugMenu": false
+    "showsDebugMenu": false,
+    "showsStreamResolution": true
   }
 }

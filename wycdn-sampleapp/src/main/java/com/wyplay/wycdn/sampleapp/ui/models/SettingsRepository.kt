@@ -100,29 +100,6 @@ class SettingsRepository(
         }
     }
 
-    // Backing property for the WyCDN debug info enabled setting, initially set to false.
-    private val _wycdnDebugInfoEnabled = MutableStateFlow(false)
-
-    /**
-     * A [Flow] of Boolean representing whether to enable WyCDN debug info. This flow emits
-     * the current value stored in the settings, allowing observers to react to changes.
-     *
-     * If the value does not exist, false is emitted as a fallback.
-     */
-    val wycdnDebugInfoEnabled: StateFlow<Boolean> = _wycdnDebugInfoEnabled.asStateFlow()
-
-    /**
-     * Updates the WyCDN debug info enabled setting.
-     *
-     * @param enable The Boolean value to be stored as the new setting.
-     */
-    suspend fun setWycdnDebugInfoEnabled(enable: Boolean) {
-        _wycdnDebugInfoEnabled.value = enable
-        dataStore.edit { preferences ->
-            preferences[WYCDN_DEBUG_INFO_ENABLED_KEY] = enable
-        }
-    }
-
     // Backing property for the WyCDN debug menu enabled setting, initially set to false.
     private val _wycdnDebugMenuEnabled = MutableStateFlow(false)
 
@@ -204,9 +181,6 @@ class SettingsRepository(
             preferences[WYCDN_DOWNLOAD_METRICS_ENABLED]?.let { enabled ->
                 _wycdnDownloadMetricsEnabled.value = enabled
             }
-            preferences[WYCDN_DEBUG_INFO_ENABLED_KEY]?.let { enabled ->
-                _wycdnDebugInfoEnabled.value = enabled
-            }
             preferences[WYCDN_DEBUG_MENU_ENABLED_KEY]?.let { enabled ->
                 _wycdnDebugMenuEnabled.value = enabled
             }
@@ -225,9 +199,6 @@ class SettingsRepository(
 
         /** [Preferences.Key] used to store and retrieve the WyCDN download metrics enabled setting. */
         internal val WYCDN_DOWNLOAD_METRICS_ENABLED = booleanPreferencesKey("wycdn_download_metrics_enabled")
-
-        /** [Preferences.Key] used to store and retrieve the WyCDN debug info enabled setting. */
-        internal val WYCDN_DEBUG_INFO_ENABLED_KEY = booleanPreferencesKey("wycdn_debug_info_enabled")
 
         /** [Preferences.Key] used to store and retrieve the WyCDN debug menu enabled setting. */
         internal val WYCDN_DEBUG_MENU_ENABLED_KEY = booleanPreferencesKey("wycdn_debug_menu_enabled")

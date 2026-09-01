@@ -40,9 +40,6 @@ class WycdnViewModel(application: Application) : AndroidViewModel(application) {
     /** Connection to the WyCDN service. */
     private val wycdn = WycdnServiceConnection(getApplication())
 
-    /** WyCDN debug information. */
-    private val debugInfoRepository = WycdnDebugInfoRepository()
-
     // Property providing the Android application instance.
     private val app: SampleApp = getApplication()
 

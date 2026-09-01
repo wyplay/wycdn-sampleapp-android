@@ -65,22 +65,6 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
         }
     }
 
-    /**
-     * Gets the current value of whether WyCDN debug info is enabled.
-     */
-    val wycdnDebugInfoEnabled: StateFlow<Boolean> = repository.wycdnDebugInfoEnabled
-
-    /**
-     * Sets the value of whether WyCDN debug info is enabled.
-     *
-     * @param enable The new Boolean value to set.
-     */
-    fun setWycdnDebugInfoEnabled(enable: Boolean) {
-        viewModelScope.launch {
-            repository.setWycdnDebugInfoEnabled(enable)
-        }
-    }
-
     /** Expose Debug Menu state as a StateFlow */
     val debugMenuEnabled: Flow<Boolean> = repository.wycdnDebugMenuEnabled
 

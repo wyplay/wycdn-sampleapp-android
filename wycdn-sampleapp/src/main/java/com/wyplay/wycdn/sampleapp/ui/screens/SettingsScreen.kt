@@ -98,12 +98,6 @@ fun SettingsScreen(
         downloadMetricsEnabled = wycdnDownloadMetricsEnabled
     }
 
-    // Collect the current debug info enabled state as state for composable to react to changes
-    val wycdnDebugInfoEnabled by settingsViewModel.wycdnDebugInfoEnabled.collectAsState(initial = false)
-
-    // Local state to store the debug info enabled state, initialized with wycdnDebugInfoEnabled
-    var debugInfoEnabled by remember { mutableStateOf(wycdnDebugInfoEnabled) }
-
     // Collect the current debug menu enabled state as state for composable to react to changes
     val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState(initial = false)
 
@@ -118,13 +112,6 @@ fun SettingsScreen(
 
     // mutable interaction source
     val interactionSource = remember { MutableInteractionSource() }
-
-    // Observe changes in wycdnDebugInfoEnabled and update debugInfoEnabled accordingly
-    // This is needed as it wycdnDebugInfoEnabled is collected asynchronously
-    LaunchedEffect(wycdnDebugInfoEnabled) {
-        debugInfoEnabled = wycdnDebugInfoEnabled
-    }
-
 
     Scaffold(
         topBar = {
@@ -189,19 +176,6 @@ fun SettingsScreen(
                         onCheckedChange = { downloadMetricsEnabled = it }
                     )
                 }
-
-                // Debug info enabled switch
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(text = stringResource(R.string.label_wycdn_debug_info_enabled))
-                    Spacer(modifier = Modifier.weight(1f))
-                    Switch(
-                        checked = debugInfoEnabled,
-                        onCheckedChange = { debugInfoEnabled = it }
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.weight(1f)) // This pushes the button to the bottom
@@ -211,7 +185,6 @@ fun SettingsScreen(
                     // Update the settings
                     settingsViewModel.setWycdnEnvironment(selectedEnv)
                     settingsViewModel.setWycdnDownloadMetricsEnabled(downloadMetricsEnabled)
-                    settingsViewModel.setWycdnDebugInfoEnabled(debugInfoEnabled)
 
                     // Restart the service with the updated settings
                     wycdnViewModel.restartService()

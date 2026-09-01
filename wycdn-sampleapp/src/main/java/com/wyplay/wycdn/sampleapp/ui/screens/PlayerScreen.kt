@@ -268,12 +268,10 @@ private fun PlayerSurface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(dimensionResource(R.dimen.padding_medium)),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small))
+            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
+            horizontalAlignment = Alignment.End
         ) {
-            TitleChip(
-                title = mediaTitle,
-                modifier = Modifier.align(Alignment.End)
-            )
+            TitleChip(title = mediaTitle)
             DebugInfoChip(
                 debugInfoState = debugInfoState,
                 modifier = Modifier.align(Alignment.End),

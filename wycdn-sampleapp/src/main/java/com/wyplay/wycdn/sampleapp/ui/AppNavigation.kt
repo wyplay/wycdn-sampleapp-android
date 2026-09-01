@@ -22,8 +22,8 @@ import androidx.navigation.compose.rememberNavController
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.MediaViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
-import com.wyplay.wycdn.sampleapp.ui.models.filterBy
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
+import com.wyplay.wycdn.sampleapp.ui.models.filterBy
 import com.wyplay.wycdn.sampleapp.ui.screens.MediaChooserScreen
 import com.wyplay.wycdn.sampleapp.ui.screens.PlayerInfoViewModel
 import com.wyplay.wycdn.sampleapp.ui.screens.PlayerScreen
@@ -68,8 +68,6 @@ fun AppNavigation() {
 
     // Initialize the WycdnViewModel using a custom factory to inject dependencies
     val wycdnViewModel: WycdnViewModel = viewModel(factory = WycdnViewModel.Factory)
-    // Collect and observe the state of WyCDN debug info
-    val wycdnDebugInfoState by wycdnViewModel.debugInfoState.collectAsState()
 
     // Create and remember a navigation controller to manage navigation between composable screens
     val navController: NavHostController = rememberNavController()
@@ -115,7 +113,6 @@ fun AppNavigation() {
             PlayerScreen(
                 mediaListState = filteredMediaListState, // Filtered media list for zapping
                 mediaIndex = mediaIndex, // Media to play (index into the filtered list)
-                debugInfoState = wycdnDebugInfoState, // Debug info to display
                 playerInfoViewModel = playerInfoViewModel,
                 settingsViewModel = settingsViewModel,
                 wycdnViewModel = wycdnViewModel

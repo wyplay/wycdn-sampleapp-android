@@ -50,7 +50,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
-import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -69,11 +68,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultDataSource
-import androidx.media3.datasource.DefaultDataSourceFactory
 import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.exoplayer.dash.DashMediaSource
-import androidx.media3.exoplayer.dash.DefaultDashChunkSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.wyplay.wycdn.sampleapp.MainActivity
 import com.wyplay.wycdn.sampleapp.R
@@ -82,7 +77,6 @@ import com.wyplay.wycdn.sampleapp.ui.components.PlayerComponent
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.ResolutionViewModel
 import com.wyplay.wycdn.sampleapp.ui.models.SettingsViewModel
-import com.wyplay.wycdn.sampleapp.ui.models.WycdnDebugInfoState
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnMediaDataSourceFactory
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
 import com.wyplay.wycdn.sampleapp.ui.theme.ControlFocused
@@ -97,8 +91,6 @@ import kotlinx.coroutines.flow.asStateFlow
  * @param mediaListState State of the media list, encapsulating whether the media list is loading,
  *                       has encountered an error, or is ready for display.
  * @param mediaIndex Index of the currently selected media item within the media list.
- * @param debugInfoState State of WyCDN debug information, encapsulating whether the debug info is loading,
- *                       is unavailable because of an error, or is ready for display.
  * @param playerInfoViewModel Player info view model.
  * @param modifier An optional [Modifier] for this composable.
  */
@@ -106,7 +98,6 @@ import kotlinx.coroutines.flow.asStateFlow
 fun PlayerScreen(
     mediaListState: MediaListState,
     mediaIndex: Int,
-    debugInfoState: WycdnDebugInfoState,
     playerInfoViewModel: PlayerInfoViewModel,
     settingsViewModel: SettingsViewModel,
     wycdnViewModel: WycdnViewModel,
@@ -142,7 +133,6 @@ fun PlayerScreen(
             PlayerSurface(
                 mediaListState.mediaList,
                 mediaIndex,
-                debugInfoState,
                 modifier,
                 playerInfoViewModel,
                 settingsViewModel,
@@ -197,7 +187,6 @@ private fun ErrorMessage(e: Exception, modifier: Modifier = Modifier) {
 private fun PlayerSurface(
     mediaList: List<MediaItem>,
     mediaIndex: Int,
-    debugInfoState: WycdnDebugInfoState,
     modifier: Modifier = Modifier,
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
     settingsViewModel: SettingsViewModel,
@@ -273,8 +262,6 @@ private fun PlayerSurface(
         ) {
             TitleChip(title = mediaTitle)
             DebugInfoChip(
-                debugInfoState = debugInfoState,
-                modifier = Modifier.align(Alignment.End),
                 playerInfoViewModel = playerInfoViewModel,
                 debugMenuEnabled = debugMenuEnabled,
                 settingsMenuOpen = showSettingsMenu,
@@ -342,8 +329,6 @@ fun TitleChipPreview() {
 
 @Composable
 fun DebugInfoChip(
-    debugInfoState: WycdnDebugInfoState,
-    modifier: Modifier = Modifier,
     playerInfoViewModel: PlayerInfoViewModel = viewModel(),
     debugMenuEnabled: Boolean = false,
     settingsMenuOpen: Boolean = false,

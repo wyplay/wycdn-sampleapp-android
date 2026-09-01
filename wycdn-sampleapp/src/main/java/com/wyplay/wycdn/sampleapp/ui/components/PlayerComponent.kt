@@ -254,6 +254,7 @@ fun PlayerComponent(
 
             AndroidView(
                 modifier = modifier
+                    .fillMaxSize()
                     .focusRequester(playerFocusRequester)
                     .focusable()
                     .onFocusChanged { focusState ->
@@ -358,4 +359,3 @@ fun createPlayerView(player: Player?): PlayerView {
     }
     return playerView
 }
-

@@ -155,11 +155,8 @@ class SettingsRepository(
      *
      * @param enable The Boolean value to be stored as the new setting.
      */
-    suspend fun setWycdnDebugMenuEnabled(enable: Boolean) {
+    fun setWycdnDebugMenuEnabled(enable: Boolean) {
         _wycdnDebugMenuEnabled.value = enable
-        dataStore.edit { preferences ->
-            preferences[WYCDN_DEBUG_MENU_ENABLED_KEY] = enable
-        }
     }
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -223,9 +220,6 @@ class SettingsRepository(
             preferences[WYCDN_DOWNLOAD_METRICS_ENABLED]?.let { enabled ->
                 _wycdnDownloadMetricsEnabled.value = enabled
             }
-            preferences[WYCDN_DEBUG_MENU_ENABLED_KEY]?.let { enabled ->
-                _wycdnDebugMenuEnabled.value = enabled
-            }
             preferences[WYCDN_MODE_KEY]?.let { mode ->
                 _wycdnMode.value = mode
             }
@@ -241,9 +235,6 @@ class SettingsRepository(
 
         /** [Preferences.Key] used to store and retrieve the WyCDN download metrics enabled setting. */
         internal val WYCDN_DOWNLOAD_METRICS_ENABLED = booleanPreferencesKey("wycdn_download_metrics_enabled")
-
-        /** [Preferences.Key] used to store and retrieve the WyCDN debug menu enabled setting. */
-        internal val WYCDN_DEBUG_MENU_ENABLED_KEY = booleanPreferencesKey("wycdn_debug_menu_enabled")
 
         /** [Preferences.Key] used to store and retrieve the WyCDN mode setting. */
         internal val WYCDN_MODE_KEY = stringPreferencesKey("wycdn_mode")

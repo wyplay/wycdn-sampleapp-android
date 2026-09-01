@@ -98,13 +98,13 @@ class SettingsRepository(
         }
     }
 
-    // Backing property for the WyCDN debug menu enabled setting, initially set to false.
-    private val _wycdnDebugMenuEnabled = MutableStateFlow(false)
+    // Backing property for the WyCDN debug menu enabled setting, initially set from AppConfig.
+    private val _wycdnDebugMenuEnabled = MutableStateFlow(appConfig.settings.showsDebugMenu)
 
     /**
      * A [Flow] of Boolean representing whether to enable WyCDN debug menu. This flow emits
      */
-    val wycdnDebugMenuEnabled: Flow<Boolean> = _wycdnDebugMenuEnabled.asStateFlow()
+    val wycdnDebugMenuEnabled: StateFlow<Boolean> = _wycdnDebugMenuEnabled.asStateFlow()
 
     /**
      * Updates the WyCDN debug menu enabled setting.

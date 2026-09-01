@@ -99,7 +99,7 @@ fun SettingsScreen(
     }
 
     // Collect the current debug menu enabled state as state for composable to react to changes
-    val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState(initial = false)
+    val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState()
 
     // Click counter and visibility state for hidden elements
     val clickCounter = remember { mutableIntStateOf(0) }

@@ -16,7 +16,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.wyplay.wycdn.sampleapp.SampleApp
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -66,7 +65,7 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     }
 
     /** Expose Debug Menu state as a StateFlow */
-    val debugMenuEnabled: Flow<Boolean> = repository.wycdnDebugMenuEnabled
+    val debugMenuEnabled: StateFlow<Boolean> = repository.wycdnDebugMenuEnabled
 
     /**
      * Sets the value of whether the debug menu is enabled.

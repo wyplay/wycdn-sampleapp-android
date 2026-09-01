@@ -44,6 +44,8 @@
     "wycdn.metrics.monitoring.port": 8295,
     "wycdn.metrics.wyplay.path": "/metrics",
     "wycdn.metrics.wyplay.port": 8295
+  },
+  "appConfig": {
+    "showsDebugMenu": false
   }
 }
-

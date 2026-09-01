@@ -196,7 +196,7 @@ private fun PlayerSurface(
 
     val resolutionViewModel: ResolutionViewModel = viewModel() // Ensure proper constructor usage
     val loaderFlag by resolutionViewModel.loaderFlag.collectAsState(initial = false)
-    val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState(initial = false)
+    val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState()
 
     // When the debug menu is disabled there is no gear, so focus falls back to the player (keeping
     // the MENU key working). When the debug menu is enabled the gear owns focus while the menu is

@@ -48,7 +48,7 @@ class AppConfigDataSource(private val assets: AssetManager) {
         val configJson = JSONObject(fetch(fileName))
 
         // Build the list of environments
-        val environmentArray = configJson.getJSONArray("environments")
+        val environmentArray = configJson.getJSONArray(KEY_ENV_LIST)
         val environments = mutableListOf<WycdnEnv>()
         for (i in 0 until environmentArray.length()) {
             val jsonObject = environmentArray.getJSONObject(i)
@@ -61,18 +61,31 @@ class AppConfigDataSource(private val assets: AssetManager) {
         }
 
         // Get default environment
-        val defaultEnvironmentId = configJson.getString("default")
+        val defaultEnvironmentId = configJson.getString(KEY_ENV_DEFAULT)
         val defaultEnvironment = environments.firstOrNull { it.id == defaultEnvironmentId }
             ?: throw NoSuchElementException(
                 "Default environment with id \"$defaultEnvironmentId\" not found"
             )
 
-        val wycdnConfig = configJson.getJSONObject("config")
+        val wycdnConfig = configJson.getJSONObject(KEY_WYCDN_CONFIG)
+        val settings = buildAppSettings(configJson.optJSONObject(KEY_APP_CONFIG) ?: JSONObject())
 
         return AppConfig(
             environments = environments,
             defaultEnvironment = defaultEnvironment,
-            wycdnConfig = wycdnConfig
+            wycdnConfig = wycdnConfig,
+            settings = settings
+        )
+    }
+
+    /**
+     * Builds application specific settings from the `appConfig` JSON section.
+     *
+     * @param configJson JSON object
+     **/
+    private fun buildAppSettings(configJson: JSONObject): AppSettings {
+        return AppSettings(
+            showsDebugMenu = configJson.optBoolean(KEY_SHOWS_DEBUG_MENU, false)
         )
     }
 
@@ -88,6 +101,14 @@ class AppConfigDataSource(private val assets: AssetManager) {
     private fun fetch(fileName: String): String {
         return assets.open(fileName).bufferedReader().use { it.readText() }
     }
+
+    private companion object {
+        const val KEY_ENV_DEFAULT = "default"
+        const val KEY_ENV_LIST = "environments"
+        const val KEY_APP_CONFIG = "appConfig"
+        const val KEY_WYCDN_CONFIG = "config"
+        const val KEY_SHOWS_DEBUG_MENU = "showsDebugMenu"
+    }
 }
 
 /**
@@ -96,11 +117,22 @@ class AppConfigDataSource(private val assets: AssetManager) {
  * @property environments The available WyCDN environments.
  * @property defaultEnvironment The default WyCDN environment.
  * @property wycdnConfig Common WyCDN properties.
+ * @property settings Application settings.
  */
 data class AppConfig(
     val environments: List<WycdnEnv>,
     val defaultEnvironment: WycdnEnv,
-    val wycdnConfig: JSONObject
+    val wycdnConfig: JSONObject,
+    val settings: AppSettings
+)
+
+/**
+ * Application settings loaded from the `appConfig` JSON section.
+ *
+ * @property showsDebugMenu Whether the debug menu is shown.
+ */
+data class AppSettings(
+    val showsDebugMenu: Boolean
 )
 
 /**

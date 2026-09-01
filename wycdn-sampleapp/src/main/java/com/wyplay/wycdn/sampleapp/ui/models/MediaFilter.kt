@@ -41,9 +41,17 @@ fun List<MediaItem>.filterBy(filter: MediaFilter): List<MediaItem> =
     filter(filter::matches)
 
 /**
- * Returns the filters to show as tabs for this media list: [MediaFilter.ALL] is always present,
- * and each format-specific filter is included only if at least one item matches it (empty tabs are
+ * Returns the useful filters to show as tabs for this media list.
+ * Each format-specific filter is included only if at least one item matches it (empty tabs are
  * hidden).
  */
-fun List<MediaItem>.availableFilters(): List<MediaFilter> =
-    MediaFilter.entries.filter { it == MediaFilter.ALL || any(it::matches) }
+fun List<MediaItem>.availableFilters(): List<MediaFilter> {
+    val formatFilters = MediaFilter.entries
+        .filter { it != MediaFilter.ALL && any(it::matches) }
+
+    // If there is only one formatFilter, `MediaFilter.ALL` will produce the same list.
+    return if (formatFilters.size > 1)
+        listOf(MediaFilter.ALL) + formatFilters
+    else
+        listOf(MediaFilter.ALL)
+}

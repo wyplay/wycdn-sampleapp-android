@@ -166,11 +166,15 @@ fun MediaChooserScreen(
                             }
                         }
                 ) {
-                    FilterTabs(
-                        filters = filters,
-                        selectedFilter = filters[pagerState.currentPage],
-                        onFilterSelected = { scope.launch { pagerState.animateScrollToPage(filters.indexOf(it)) } }
-                    )
+                    if (filters.size > 1) {
+                        FilterTabs(
+                            filters = filters,
+                            selectedFilter = filters[pagerState.currentPage],
+                            onFilterSelected = {
+                                scope.launch { pagerState.animateScrollToPage(filters.indexOf(it)) }
+                            }
+                        )
+                    }
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier

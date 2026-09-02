@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -58,6 +59,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -83,7 +85,6 @@ import com.wyplay.wycdn.sampleapp.ui.models.WycdnMediaDataSourceFactory
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
 import com.wyplay.wycdn.sampleapp.ui.theme.ControlFocused
 import com.wyplay.wycdn.sampleapp.ui.theme.ControlUnfocused
-import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -203,10 +204,25 @@ private fun PlayerSurface(
     val showsStreamResolution by settingsViewModel.showsStreamResolution.collectAsState()
 
     val playerFocusRequester = remember { FocusRequester() }
-    LaunchedEffect(showSettingsMenu) {
+    val settingsFocusRequester = remember { FocusRequester() }
+    var isPlayerPositioned by remember { mutableStateOf(false) }
+    var restoreFocusToSettingsButton by remember { mutableStateOf(false) }
+
+    LaunchedEffect(
+        showSettingsMenu,
+        isPlayerPositioned,
+        debugMenuEnabled,
+        restoreFocusToSettingsButton
+    ) {
+        // Manage focus on either the player / settings button when the debug menu is closed
         if (!showSettingsMenu) {
-            awaitFrame() // Force to render a frame to avoid a possible focus issue
-            playerFocusRequester.requestFocus()
+            if (restoreFocusToSettingsButton && debugMenuEnabled) {
+                // Restore focus on the settings button when closing the debug menu
+                settingsFocusRequester.requestFocus()
+            } else if (isPlayerPositioned) {
+                // Ensure to request focus only when the player is positioned
+                playerFocusRequester.requestFocus()
+            }
         }
     }
 
@@ -245,11 +261,24 @@ private fun PlayerSurface(
             },
             onMenuKey = {
                 if (debugMenuEnabled) {
+                    restoreFocusToSettingsButton = false
                     showSettingsMenu = true
                 }
             },
             mediaSourceFactory = mediaSourceFactory,
-            playerFocusRequester = playerFocusRequester
+            playerFocusRequester = playerFocusRequester,
+            modifier = Modifier
+                .onGloballyPositioned { isPlayerPositioned = true }
+                .then(
+                    if (debugMenuEnabled) {
+                        Modifier.focusProperties {
+                            up = settingsFocusRequester
+                            left = settingsFocusRequester
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
         )
 
         PlayerInfoOverlay(
@@ -264,7 +293,12 @@ private fun PlayerSurface(
 
         if (debugMenuEnabled) {
             SettingsButton(
-                onSettingsClick = { showSettingsMenu = !showSettingsMenu },
+                onSettingsClick = {
+                    restoreFocusToSettingsButton = true
+                    showSettingsMenu = !showSettingsMenu
+                },
+                settingsFocusRequester = settingsFocusRequester,
+                playerFocusRequester = playerFocusRequester,
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(dimensionResource(R.dimen.padding_medium))
@@ -352,6 +386,8 @@ private fun PlayerInfoOverlayPreview() {
 @Composable
 private fun SettingsButton(
     onSettingsClick: () -> Unit,
+    settingsFocusRequester: FocusRequester,
+    playerFocusRequester: FocusRequester,
     modifier: Modifier = Modifier
 ) {
     var gearFocused by remember { mutableStateOf(false) }
@@ -361,6 +397,11 @@ private fun SettingsButton(
         tint = White,
         modifier = modifier
             .size(24.dp)
+            .focusRequester(settingsFocusRequester)
+            .focusProperties {
+                down = playerFocusRequester
+                right = playerFocusRequester
+            }
             .onFocusChanged { gearFocused = it.isFocused }
             .background(
                 color = if (gearFocused) ControlFocused else ControlUnfocused,

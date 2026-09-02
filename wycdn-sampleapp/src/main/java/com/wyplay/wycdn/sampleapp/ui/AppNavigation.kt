@@ -9,6 +9,7 @@
 
 package com.wyplay.wycdn.sampleapp.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -18,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.wyplay.wycdn.sampleapp.ui.models.MediaListState
 import com.wyplay.wycdn.sampleapp.ui.models.MediaViewModel
@@ -74,7 +76,14 @@ fun AppNavigation() {
     // Create and remember a navigation controller to manage navigation between composable screens
     val navController: NavHostController = rememberNavController()
 
+    // Create the player info view model
     val playerInfoViewModel = PlayerInfoViewModel()
+
+    // Observe the current page destination to enable the BackHandler only on the Home page
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    BackHandler(
+        enabled = currentBackStackEntry?.destination?.route == NavRoute.SettingsScreen.name
+    ) {}
 
     // Define the navigation graph for the application
     NavHost(

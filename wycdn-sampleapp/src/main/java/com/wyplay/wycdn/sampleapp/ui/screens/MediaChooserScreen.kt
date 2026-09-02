@@ -83,7 +83,8 @@ import kotlinx.coroutines.launch
  * @param onMediaIndexSelected Action to be taken when a media item is selected from the list.
  *                             The index refers to a position within the filtered list.
  * @param peerId Peer ID to display in the screen title.
- * @param currentWycdnEnvLabel Current WyCDN environment label to display in the screen title.
+ * @param currentWycdnEnvName Current WyCDN environment name to display in the screen title.
+ * @param showsChannelsUrls Whether channel URLs are shown.
  * @param modifier An optional [Modifier] for this composable.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +97,7 @@ fun MediaChooserScreen(
     onMediaIndexSelected: (Int) -> Unit,
     peerId: String,
     currentWycdnEnvName: String,
+    showsChannelsUrls: Boolean,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -179,6 +181,7 @@ fun MediaChooserScreen(
                             mediaList = fullList.filterBy(filters[page]),
                             mediaIndex = mediaIndex,
                             onMediaIndexSelected = onMediaIndexSelected,
+                            showsChannelsUrls = showsChannelsUrls,
                             isActive = page == pagerState.currentPage
                         )
                     }
@@ -217,6 +220,7 @@ private fun MediaList(
     mediaList: List<MediaItem>,
     mediaIndex: Int,
     onMediaIndexSelected: (Int) -> Unit,
+    showsChannelsUrls: Boolean,
     modifier: Modifier = Modifier,
     isActive: Boolean = true
 ) {
@@ -266,13 +270,27 @@ private fun MediaList(
                     }
                     .focusable()
             ) {
-                Text(
-                    text = mediaItem.mediaMetadata.title.toString(),
+                Column(
                     modifier = Modifier
-                        .padding(dimensionResource(R.dimen.padding_medium))
-                        .clickable { onMediaIndexSelected(index) },
-                    color = textColor
-                )
+                        .fillMaxWidth()
+                        .clickable { onMediaIndexSelected(index) }
+                        .padding(dimensionResource(R.dimen.padding_medium)),
+                    verticalArrangement = Arrangement.spacedBy(
+                        dimensionResource(R.dimen.padding_small)
+                    )
+                ) {
+                    Text(
+                        text = mediaItem.mediaMetadata.title.toString(),
+                        color = textColor
+                    )
+                    if (showsChannelsUrls) {
+                        Text(
+                            text = mediaItem.localConfiguration?.uri?.toString().orEmpty(),
+                            color = textColor.copy(alpha = 0.75f),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
             }
         }
     }
@@ -372,6 +390,7 @@ private fun MediaChooserScreenMediaListPreview() {
     for (i in 1..10) {
         val mediaItem = MediaItem.Builder()
             .setMediaId("media_id_$i")
+            .setUri("https://cdn/channels/media_$i/index.mpd")
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setTitle("Title $i")
@@ -394,6 +413,7 @@ private fun MediaChooserScreenPreview(
         onMediaFilterSelected = { },
         onMediaIndexSelected = { },
         peerId = "generic-123abc",
-        currentWycdnEnvName = "Default"
+        currentWycdnEnvName = "Default",
+        showsChannelsUrls = true
     )
 }

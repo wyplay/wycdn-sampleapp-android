@@ -53,6 +53,7 @@
     "includeChannelsV2": true,
     "showsDebugMenu": false,
     "showsChannelsType": true,
+    "showsChannelsUrls": false,
     "showsStreamResolution": true
   }
 }

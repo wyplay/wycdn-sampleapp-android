@@ -98,6 +98,18 @@ fun SettingsScreen(
         downloadMetricsEnabled = wycdnDownloadMetricsEnabled
     }
 
+    // Collect the current status of whether channel URLs are shown in the channel list
+    val savedShowsChannelsUrls by settingsViewModel.showsChannelsUrls.collectAsState()
+
+    // Local state to store the status of whether channel URLs are shown in the channel list.
+    var showsChannelsUrls by remember { mutableStateOf(savedShowsChannelsUrls) }
+
+    // Observe changes in savedShowsChannelsUrls and update showsChannelsUrls accordingly
+    // This is needed as it savedShowsChannelsUrls is collected asynchronously
+    LaunchedEffect(savedShowsChannelsUrls) {
+        showsChannelsUrls = savedShowsChannelsUrls
+    }
+
     // Collect the current debug menu enabled state as state for composable to react to changes
     val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState()
 
@@ -176,6 +188,19 @@ fun SettingsScreen(
                         onCheckedChange = { downloadMetricsEnabled = it }
                     )
                 }
+
+                // Show channel URLs switch
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(text = stringResource(R.string.label_show_channels_urls))
+                    Spacer(modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = showsChannelsUrls,
+                        onCheckedChange = { showsChannelsUrls = it }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.weight(1f)) // This pushes the button to the bottom
@@ -185,6 +210,7 @@ fun SettingsScreen(
                     // Update the settings
                     settingsViewModel.setWycdnEnvironment(selectedEnv)
                     settingsViewModel.setWycdnDownloadMetricsEnabled(downloadMetricsEnabled)
+                    settingsViewModel.setShowsChannelsUrls(showsChannelsUrls)
 
                     // Restart the service with the updated settings
                     wycdnViewModel.restartService()

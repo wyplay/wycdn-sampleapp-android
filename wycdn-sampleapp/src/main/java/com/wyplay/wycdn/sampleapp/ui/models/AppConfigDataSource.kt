@@ -92,6 +92,7 @@ class AppConfigDataSource(private val assets: AssetManager) {
             includeChannelsV2 = configJson.optBoolean(KEY_INCLUDE_CHANNELS_V2, true),
             showsDebugMenu = configJson.optBoolean(KEY_SHOWS_DEBUG_MENU, false),
             showsChannelsType = configJson.optBoolean(KEY_SHOWS_CHANNELS_TYPE, true),
+            showsChannelsUrls = configJson.optBoolean(KEY_SHOWS_CHANNELS_URLS, false),
             showsStreamResolution = configJson.optBoolean(KEY_SHOWS_STREAM_RESOLUTION, true)
         )
     }
@@ -121,6 +122,7 @@ class AppConfigDataSource(private val assets: AssetManager) {
         const val KEY_INCLUDE_CHANNELS_PROXY = "includeChannelsProxy"
         const val KEY_SHOWS_DEBUG_MENU = "showsDebugMenu"
         const val KEY_SHOWS_CHANNELS_TYPE = "showsChannelsType"
+        const val KEY_SHOWS_CHANNELS_URLS = "showsChannelsUrls"
         const val KEY_SHOWS_STREAM_RESOLUTION = "showsStreamResolution"
     }
 }
@@ -150,6 +152,7 @@ data class AppConfig(
  * @property includeChannelsV2 Whether WyCDN V2 channels are included.
  * @property showsDebugMenu Whether the debug menu is shown.
  * @property showsChannelsType Whether the channel type (CDN/V1/etc) is shown in channel titles.
+ * @property showsChannelsUrls Whether channel URLs are shown in the channel list.
  * @property showsStreamResolution Whether the current stream resolution is shown.
  */
 data class AppSettings(
@@ -160,6 +163,7 @@ data class AppSettings(
     val includeChannelsV2: Boolean,
     val showsDebugMenu: Boolean,
     val showsChannelsType: Boolean,
+    val showsChannelsUrls: Boolean,
     val showsStreamResolution: Boolean
 )
 

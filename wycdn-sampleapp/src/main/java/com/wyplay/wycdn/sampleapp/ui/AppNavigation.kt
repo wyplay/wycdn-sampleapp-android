@@ -65,6 +65,8 @@ fun AppNavigation() {
     val currentWycdnEnv = settingsViewModel.wycdnEnvironment.collectAsState(
         initial = settingsViewModel.appConfig.defaultEnvironment
     )
+    // Collect and observe the status of whether channel URLs are shown in the channel list.
+    val showsChannelsUrls by settingsViewModel.showsChannelsUrls.collectAsState()
 
     // Initialize the WycdnViewModel using a custom factory to inject dependencies
     val wycdnViewModel: WycdnViewModel = viewModel(factory = WycdnViewModel.Factory)
@@ -105,7 +107,8 @@ fun AppNavigation() {
                     navController.navigate(NavRoute.PlayerScreen.name)
                 },
                 peerId = wycdnViewModel.peerId,
-                currentWycdnEnvName = currentWycdnEnv.value.name
+                currentWycdnEnvName = currentWycdnEnv.value.name,
+                showsChannelsUrls = showsChannelsUrls
             )
         }
         // Navigation route for the PlayerScreen

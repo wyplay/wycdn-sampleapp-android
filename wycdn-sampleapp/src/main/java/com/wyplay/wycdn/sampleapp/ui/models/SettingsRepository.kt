@@ -98,6 +98,26 @@ class SettingsRepository(
         }
     }
 
+    // Backing property for showing channel URLs, initially set from AppConfig.
+    private val _showsChannelsUrls = MutableStateFlow(appConfig.settings.showsChannelsUrls)
+
+    /**
+     * A [Flow] of Boolean representing whether channel URLs are shown in the channel list.
+     * This flow emits the current value stored in the settings, allowing observers to react to changes.
+     *
+     * If the value does not exist, false is emitted as a fallback.
+     */
+    val showsChannelsUrls: StateFlow<Boolean> = _showsChannelsUrls.asStateFlow()
+
+    /**
+     * Updates the value of whether channel URLs are shown.
+     *
+     * @param show The Boolean value to be stored as the new setting.
+     */
+    fun setShowsChannelsUrls(show: Boolean) {
+        _showsChannelsUrls.value = show
+    }
+
     // Backing property for showing the stream resolution, initially set from AppConfig.
     private val _showsStreamResolution =
         MutableStateFlow(appConfig.settings.showsStreamResolution)
@@ -123,7 +143,10 @@ class SettingsRepository(
     private val _wycdnDebugMenuEnabled = MutableStateFlow(appConfig.settings.showsDebugMenu)
 
     /**
-     * A [Flow] of Boolean representing whether to enable WyCDN debug menu. This flow emits
+     * A [Flow] of Boolean representing whether to enable WyCDN debug menu.
+     * This flow emits the current value stored in the settings, allowing observers to react to changes.
+     *
+     * If the value does not exist, false is emitted as a fallback.
      */
     val wycdnDebugMenuEnabled: StateFlow<Boolean> = _wycdnDebugMenuEnabled.asStateFlow()
 

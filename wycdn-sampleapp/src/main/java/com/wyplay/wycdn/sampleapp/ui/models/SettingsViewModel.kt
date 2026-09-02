@@ -65,6 +65,22 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     }
 
     /**
+     * Gets the current value of whether channel URLs are shown in the channel list.
+     */
+    val showsChannelsUrls: StateFlow<Boolean> = repository.showsChannelsUrls
+
+    /**
+     * Sets the value of whether channel URLs are shown in the channel list.
+     *
+     * @param show The new Boolean value to set.
+     */
+    fun setShowsChannelsUrls(show: Boolean) {
+        viewModelScope.launch {
+            repository.setShowsChannelsUrls(show)
+        }
+    }
+
+    /**
      * Gets the current value of whether the current stream resolution is shown.
      */
     val showsStreamResolution: StateFlow<Boolean> = repository.showsStreamResolution

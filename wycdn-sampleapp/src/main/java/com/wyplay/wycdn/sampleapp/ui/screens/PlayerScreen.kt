@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -51,6 +50,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
+import androidx.compose.ui.graphics.Color.Companion.Gray
+import androidx.compose.ui.graphics.Color.Companion.LightGray
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -61,7 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,6 +83,7 @@ import com.wyplay.wycdn.sampleapp.ui.models.WycdnMediaDataSourceFactory
 import com.wyplay.wycdn.sampleapp.ui.models.WycdnViewModel
 import com.wyplay.wycdn.sampleapp.ui.theme.ControlFocused
 import com.wyplay.wycdn.sampleapp.ui.theme.ControlUnfocused
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -200,14 +202,10 @@ private fun PlayerSurface(
     val debugMenuEnabled by settingsViewModel.debugMenuEnabled.collectAsState()
     val showsStreamResolution by settingsViewModel.showsStreamResolution.collectAsState()
 
-    // When the debug menu is disabled there is no gear, so focus falls back to the player (keeping
-    // the MENU key working). When the debug menu is enabled the gear owns focus while the menu is
-    // closed; that request lives in DebugInfoChip, co-located with the gear so it runs only after
-    // the icon is attached. Requesting from a LaunchedEffect ensures focus is restored AFTER the
-    // closed menu subtree leaves composition, otherwise Compose resets focus to the root.
     val playerFocusRequester = remember { FocusRequester() }
-    LaunchedEffect(showSettingsMenu, debugMenuEnabled) {
-        if (!showSettingsMenu && !debugMenuEnabled) {
+    LaunchedEffect(showSettingsMenu) {
+        if (!showSettingsMenu) {
+            awaitFrame() // Force to render a frame to avoid a possible focus issue
             playerFocusRequester.requestFocus()
         }
     }
@@ -254,28 +252,24 @@ private fun PlayerSurface(
             playerFocusRequester = playerFocusRequester
         )
 
-        // Title chip and optional Debug info chip
-        Column(
+        PlayerInfoOverlay(
+            title = mediaTitle,
+            peerId = wycdnViewModel.peerId,
+            playerInfoViewModel = playerInfoViewModel,
+            showsStreamResolution = showsStreamResolution,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(dimensionResource(R.dimen.padding_medium)),
-            verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.padding_small)),
-            horizontalAlignment = Alignment.End
-        ) {
-            TitleChip(title = mediaTitle)
-            if (debugMenuEnabled || showsStreamResolution) {
-                DebugInfoChip(
-                    playerInfoViewModel = playerInfoViewModel,
-                    debugMenuEnabled = debugMenuEnabled,
-                    showsStreamResolution = showsStreamResolution,
-                    settingsMenuOpen = showSettingsMenu,
-                    onSettingsClick = { showSettingsMenu = !showSettingsMenu }
-                )
-            }
-        }
+                .padding(dimensionResource(R.dimen.padding_medium))
+        )
 
         if (debugMenuEnabled) {
-            // Settings Menu
+            SettingsButton(
+                onSettingsClick = { showSettingsMenu = !showSettingsMenu },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(dimensionResource(R.dimen.padding_medium))
+            )
+
             if (showSettingsMenu) {
                 SettingsMenu(
                     settingsViewModel = settingsViewModel,
@@ -283,7 +277,7 @@ private fun PlayerSurface(
                     onDismiss = { showSettingsMenu = false },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(16.dp)
+                        .padding(dimensionResource(R.dimen.padding_medium))
                 )
             }
         }
@@ -296,102 +290,88 @@ private fun PlayerSurface(
 }
 
 @Composable
-private fun TitleChip(
+private fun PlayerInfoOverlay(
     title: String,
-    modifier: Modifier = Modifier
+    peerId: String,
+    modifier: Modifier = Modifier,
+    playerInfoViewModel: PlayerInfoViewModel = viewModel(),
+    showsStreamResolution: Boolean = true
 ) {
-    Text(
-        text = title,
-        color = White, // Text color for visibility
+    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo())
+
+    Column(
         modifier = modifier
             .background(
-                color = Black.copy(alpha = 0.5f), // Lightly transparent background
-                shape = RoundedCornerShape(50.dp) // Rounded corners for the chip
+                color = Black.copy(alpha = 0.8f),
+                shape = RoundedCornerShape(10.dp)
             )
-            .padding( // Padding inside the chip
-                horizontal = dimensionResource(R.dimen.padding_small),
-                vertical = dimensionResource(R.dimen.padding_extra_small)
-            ),
-        style = MaterialTheme.typography.labelLarge,
-        textAlign = TextAlign.Center
-    )
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
-@Composable
-fun TitleChipPreview() {
-    Box(
-        modifier = Modifier.size(200.dp, 100.dp)
+            .padding(8.dp),
+        horizontalAlignment = Alignment.End
     ) {
-        TitleChip(
-            title = "Title Chip Preview",
-            modifier = Modifier
-                .align(Alignment.TopEnd) // Align to the top end corner
-                .padding(dimensionResource(R.dimen.padding_medium)) // Padding from the edges of the Box
+        Text(
+            text = title,
+            color = White,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (showsStreamResolution) {
+            Text(
+                text = playerInfo.resolution,
+                color = LightGray,
+                style = TextStyle(fontSize = 16.sp),
+                modifier = Modifier.padding(top = 5.dp)
+            )
+            Log.d("PlayerInfoOverlay", "Resolution: ${playerInfo.resolution}")
+        }
+        Text(
+            text = peerId,
+            color = Gray,
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 5.dp)
         )
     }
 }
 
+@Preview(showBackground = true, backgroundColor = 0xFFCCCCCC)
 @Composable
-fun DebugInfoChip(
-    playerInfoViewModel: PlayerInfoViewModel = viewModel(),
-    debugMenuEnabled: Boolean = false,
-    showsStreamResolution: Boolean = true,
-    settingsMenuOpen: Boolean = false,
-    gearFocusRequester: FocusRequester = remember { FocusRequester() },
-    onSettingsClick: () -> Unit
-) {
-    val playerInfo by playerInfoViewModel.playerInfo.collectAsState(initial = PlayerInfo())
-
-    Row(
-        modifier = Modifier
-            .background(
-                color = Black.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(5.dp)
-            )
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (showsStreamResolution) {
-            Text(
-                text = "Resolution: ${playerInfo.resolution}",
-                color = White,
-                style = TextStyle(fontSize = 16.sp)
-            )
-            Log.d("DebugInfoChip", "Resolution: ${playerInfo.resolution}")
-        }
-        if (debugMenuEnabled) {
-            // Keep the gear focused whenever the debug menu is closed so the D-pad always has a
-            // target. Co-located with the gear here so the request runs after the icon is attached.
-            LaunchedEffect(settingsMenuOpen) {
-                if (!settingsMenuOpen) {
-                    gearFocusRequester.requestFocus()
-                }
-            }
-            var gearFocused by remember { mutableStateOf(false) }
-            if (showsStreamResolution) {
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Icon(
-                imageVector = Icons.Filled.Settings,
-                contentDescription = "Settings",
-                tint = White,
-                modifier = Modifier
-                    .size(24.dp)
-                    .focusRequester(gearFocusRequester)
-                    .onFocusChanged { gearFocused = it.isFocused }
-                    .background(
-                        color = if (gearFocused) ControlFocused else ControlUnfocused,
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .clickable { onSettingsClick() }
-            )
-        }
+private fun PlayerInfoOverlayPreview() {
+    val playerInfoViewModel = remember {
+        PlayerInfoViewModel().apply { updateResolution("1920x1080") }
     }
+
+    PlayerInfoOverlay(
+        title = "Channel Title",
+        peerId = "667cd3c8-a6b4-11f1-b0e9-f3fb924a0e58",
+        playerInfoViewModel = playerInfoViewModel
+    )
 }
 
 @Composable
-fun SettingsMenu(
+private fun SettingsButton(
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var gearFocused by remember { mutableStateOf(false) }
+    Icon(
+        imageVector = Icons.Filled.Settings,
+        contentDescription = "Settings",
+        tint = White,
+        modifier = modifier
+            .size(24.dp)
+            .onFocusChanged { gearFocused = it.isFocused }
+            .background(
+                color = if (gearFocused) ControlFocused else ControlUnfocused,
+                shape = RoundedCornerShape(4.dp)
+            )
+            .clickable { onSettingsClick() }
+    )
+}
+
+@Composable
+private fun SettingsMenu(
     modifier: Modifier = Modifier,
     wycdnViewModel: WycdnViewModel,
     settingsViewModel: SettingsViewModel,

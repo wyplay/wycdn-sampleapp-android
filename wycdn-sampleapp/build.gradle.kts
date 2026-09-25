@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.wyplay.wycdn.sampleapp"
-        minSdk = 28
+        minSdk = 26
         targetSdk = 36
         versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 1
         versionName = project.findProperty("versionName")?.toString() ?: "1.0"
@@ -28,7 +28,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

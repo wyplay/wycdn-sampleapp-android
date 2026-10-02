@@ -9,6 +9,25 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// Since 15.36.11, the WyCDN service is split into a Java part and one native part per ABI.
+// Select the ABIs with `-PwycdnAbis=<abi>[,<abi>...]` (for example `-PwycdnAbis=arm64,arm`).
+// Without this property, the app uses the default WyCDN service, which includes all the ABIs.
+// Older WyCDN versions are not split, so they work only without this property.
+val wycdnAbiDirs = mapOf(
+    "arm" to "armeabi-v7a",
+    "arm64" to "arm64-v8a",
+    "x86" to "x86",
+    "x86_64" to "x86_64"
+)
+val wycdnAbis = project.findProperty("wycdnAbis")?.toString()
+    ?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.distinct()
+    ?: emptyList()
+wycdnAbis.forEach { abi ->
+    require(abi in wycdnAbiDirs) {
+        "Unknown WyCDN ABI '$abi' in wycdnAbis. Use one of: ${wycdnAbiDirs.keys.joinToString()}"
+    }
+}
+
 android {
     namespace = "com.wyplay.wycdn.sampleapp"
     compileSdk = 36
@@ -23,6 +42,13 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
+        }
+
+        // Keep only the selected ABIs
+        if (wycdnAbis.isNotEmpty()) {
+            ndk {
+                abiFilters += wycdnAbis.map { wycdnAbiDirs.getValue(it) }
+            }
         }
     }
 
@@ -75,7 +101,18 @@ android {
 
 dependencies {
     // WyCDN
-    implementation(libs.wycdn.service)
+    if (wycdnAbis.isEmpty()) {
+        implementation(libs.wycdn.service)
+    } else {
+        // Java part, then the native part of each selected ABI
+        (listOf("java") + wycdnAbis).forEach { part ->
+            implementation(libs.wycdn.service) {
+                capabilities {
+                    requireCapability("com.wyplay.wycdn:wycdn-service-$part")
+                }
+            }
+        }
+    }
 
     // AndroidX
     implementation(libs.androidx.core.ktx)
